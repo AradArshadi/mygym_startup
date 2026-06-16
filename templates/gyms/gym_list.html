@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero">
+  <h1>Find your next gym in seconds.</h1>
+  <p>Compare gyms, trainers, prices, facilities, and book a trial visit.</p>
+  <form class="search" method="get">
+    <input name="q" placeholder="Search gym, vibe, or facility" value="{{ query }}">
+    <input name="city" placeholder="City" value="{{ city }}">
+    <input name="max_price" placeholder="Max price" value="{{ max_price }}">
+    <input type="hidden" name="view" value="{{ view_mode }}">
+    <button>Search</button>
+  </form>
+</section>
+
+<div class="view-switcher">
+  <a class="{% if view_mode == 'cards' %}active{% endif %}" href="?q={{ query }}&city={{ city }}&max_price={{ max_price }}&view=cards">Card view</a>
+  <a class="{% if view_mode == 'table' %}active{% endif %}" href="?q={{ query }}&city={{ city }}&max_price={{ max_price }}&view=table">Table view</a>
+  <a class="{% if view_mode == 'map' %}active{% endif %}" href="?q={{ query }}&city={{ city }}&max_price={{ max_price }}&view=map">Map view</a>
+</div>
+
+{% if view_mode == 'table' %}
+  <section class="card table-card">
+    <table class="gym-table">
+      <thead>
+        <tr>
+          <th>Gym</th>
+          <th>City</th>
+          <th>From</th>
+          <th>Rating</th>
+          <th>Facilities</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for gym in gyms %}
+          <tr>
+            <td><strong>{{ gym.name }}</strong></td>
+            <td>{{ gym.city }}</td>
+            <td>€{{ gym.starting_price }}</td>
+            <td>{{ gym.avg_rating|floatformat:1|default:'—' }}</td>
+            <td>{% for f in gym.facilities.all %}{{ f.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            <td><a class="btn small" href="{% url 'gym_detail' gym.slug %}">View</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6">No gyms found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% elif view_mode == 'map' %}
+  <section class="card">
+    <div id="gym-map"></div>
+    <p class="muted">Gyms without coordinates are not shown on the map yet.</p>
+  </section>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const gyms = [
+      {% for gym in gyms %}
+        {% if gym.latitude and gym.longitude %}
+          {
+            name: "{{ gym.name|escapejs }}",
+            city: "{{ gym.city|escapejs }}",
+            price: "{{ gym.starting_price }}",
+            url: "{% url 'gym_detail' gym.slug %}",
+            lat: {{ gym.latitude }},
+            lng: {{ gym.longitude }}
+          },
+        {% endif %}
+      {% endfor %}
+    ];
+    const map = L.map('gym-map').setView([49.8988, 10.9028], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    const markers = [];
+    gyms.forEach(gym => {
+      const marker = L.marker([gym.lat, gym.lng]).addTo(map)
+        .bindPopup(`<strong>${gym.name}</strong><br>${gym.city}<br>From €${gym.price}<br><a href="${gym.url}">View gym</a>`);
+      markers.push(marker);
+    });
+    if (markers.length) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.2));
+    }
+  </script>
+{% else %}
+  <section class="grid">
+    {% for gym in gyms %}
+      <article class="card">
+        <h2>{{ gym.name }}</h2>
+        <p>{{ gym.city }} · from €{{ gym.starting_price }}</p>
+        <p>{{ gym.description|truncatewords:18 }}</p>
+        <div class="tags">{% for f in gym.facilities.all %}<span>{{ f.name }}</span>{% endfor %}</div>
+        <a class="btn" href="{% url 'gym_detail' gym.slug %}">View gym</a>
+      </article>
+    {% empty %}
+      <p>No gyms found.</p>
+    {% endfor %}
+  </section>
+{% endif %}
+{% endblock %}

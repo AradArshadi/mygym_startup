@@ -1,0 +1,52 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
+from django.shortcuts import get_object_or_404, redirect
+from apps.gyms.models import Gym
+from .models import Review
+
+
+@login_required
+def create_review(request, gym_id):
+    gym = get_object_or_404(Gym, id=gym_id, status=Gym.Status.APPROVED)
+    if request.method != 'POST':
+        return redirect('gym_detail', slug=gym.slug)
+
+    rating = request.POST.get('rating')
+    comment = request.POST.get('comment', '').strip()
+
+    try:
+        rating = int(rating)
+    except (TypeError, ValueError):
+        messages.error(request, 'Please choose a valid rating.')
+        return redirect('gym_detail', slug=gym.slug)
+
+    if rating < 1 or rating > 5:
+        messages.error(request, 'Rating must be between 1 and 5.')
+        return redirect('gym_detail', slug=gym.slug)
+
+    if len(comment) < 10:
+        messages.error(request, 'Please write at least 10 characters for your review.')
+        return redirect('gym_detail', slug=gym.slug)
+
+    try:
+        Review.objects.create(user=request.user, gym=gym, rating=rating, comment=comment)
+    except IntegrityError:
+        messages.error(request, 'You already reviewed this gym.')
+        return redirect('gym_detail', slug=gym.slug)
+
+    try:
+        from apps.notifications.models import Notification
+        Notification.objects.create(
+            recipient=gym.owner,
+            sender=request.user,
+            kind=Notification.Kind.REVIEW,
+            title=f'New review for {gym.name}',
+            message=f'{request.user.username} left a {rating}/5 review.',
+            url=f'/gyms/{gym.slug}/',
+        )
+    except Exception:
+        pass
+
+    messages.success(request, 'Review submitted. Thanks for helping other customers!')
+    return redirect('gym_detail', slug=gym.slug)

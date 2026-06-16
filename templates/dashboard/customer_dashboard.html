@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>My Dashboard</h1>
+<p class="muted">Your bookings, saved gyms, and reviews in one place.</p>
+
+<section class="stats-grid">
+  <article class="stat-card"><strong>{{ stats.bookings }}</strong><span>Total bookings</span></article>
+  <article class="stat-card"><strong>{{ stats.pending_bookings }}</strong><span>Pending</span></article>
+  <article class="stat-card"><strong>{{ stats.favorites }}</strong><span>Saved gyms</span></article>
+  <article class="stat-card"><strong>{{ stats.reviews }}</strong><span>Reviews</span></article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="card">
+    <h2>Recent bookings</h2>
+    {% for booking in bookings %}
+      <div class="list-row">
+        <div>
+          <strong>{{ booking.gym.name }}</strong>
+          <p>{{ booking.booking_datetime|date:'d M Y, H:i' }} · <span class="status-pill status-{{ booking.status|lower }}">{{ booking.status }}</span></p>
+        </div>
+        <div class="row-actions">
+          <a href="{% url 'gym_detail' booking.gym.slug %}">Open</a>
+          {% if booking.status == 'PENDING' or booking.status == 'CONFIRMED' %}
+            <form action="{% url 'cancel_own_booking' booking.id %}" method="post" class="inline-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-muted">Cancel</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <p>No bookings yet. Time to find your next gym.</p>
+    {% endfor %}
+  </article>
+
+  <article class="card">
+    <h2>Saved gyms</h2>
+    {% for favorite in favorites %}
+      <div class="list-row">
+        <div>
+          <strong>{{ favorite.gym.name }}</strong>
+          <p>{{ favorite.gym.city }} · from €{{ favorite.gym.starting_price }}</p>
+        </div>
+        <a href="{% url 'gym_detail' favorite.gym.slug %}">View</a>
+      </div>
+    {% empty %}
+      <p>No saved gyms yet.</p>
+    {% endfor %}
+  </article>
+
+  <article class="card">
+    <h2>Your reviews</h2>
+    {% for review in reviews %}
+      <div class="list-row vertical">
+        <strong>{{ review.gym.name }} · {{ review.rating }}/5</strong>
+        <p>{{ review.comment|truncatewords:20 }}</p>
+      </div>
+    {% empty %}
+      <p>No reviews yet.</p>
+    {% endfor %}
+  </article>
+</section>
+{% endblock %}
