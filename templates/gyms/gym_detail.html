@@ -1,118 +1,93 @@
 {% extends 'base.html' %}
+{% block title %}{{ gym.name }} · myGym{% endblock %}
 {% block content %}
-<article class="detail">
-  <section class="hero-detail">
-    <div>
-      <p class="eyebrow">{{ gym.city }}</p>
-      <h1>{{ gym.name }}</h1>
-      <p>{{ gym.address }}</p>
-      <p>{{ gym.description }}</p>
+{% with cover=gym.cover_image %}
+<section class="detail-hero neo-detail-hero text-white" {% if cover %}style="background-image: linear-gradient(90deg, rgba(15,14,13,.72), rgba(15,14,13,.35)), url('{{ cover.image.url }}');"{% endif %}>
+  <div class="container">
+    <div class="row align-items-end g-4 min-vh-detail">
+      <div class="col-lg-8">
+        <span class="pill-label light mb-3">{{ gym.city }}</span>
+        <h1 class="hero-title detail-title mb-3">{{ gym.name }}</h1>
+        <p class="lead text-white-75 mb-2">{{ gym.address }}</p>
+        <p class="text-white-75 mb-0 detail-copy">{{ gym.description }}</p>
+      </div>
+      <div class="col-lg-4">
+        <div class="price-panel glass-light text-dark p-4">
+          <span class="text-muted">Memberships from</span>
+          <strong class="display-5 d-block">€{{ gym.starting_price }}</strong>
+          <a href="#book" class="btn btn-primary rounded-pill w-100 mt-3">Book a trial</a>
+        </div>
+      </div>
     </div>
-    <div class="price-badge">From €{{ gym.starting_price }}</div>
-  </section>
+  </div>
+</section>
+{% endwith %}
 
-  <section>
-    <h2>Photos</h2>
-    <div class="photo-grid">
-      {% for image in gym.images.all %}
-        <figure class="photo-card">
-          <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:gym.name }}">
-          {% if image.alt_text %}<figcaption>{{ image.alt_text }}</figcaption>{% endif %}
-        </figure>
+<div class="container py-5">
+  <section class="mb-5">
+    <div class="d-flex justify-content-between align-items-end mb-3">
+      <div><p class="section-kicker">Gallery</p><h2 class="section-title">Photos</h2></div>
+    </div>
+    <div class="row g-3">
+      {% for image in gym.gallery_images %}
+        <div class="col-md-4">
+          <img class="rounded-5 shadow-sm w-100 detail-photo" src="{{ image.image.url }}" alt="{{ image.alt_text|default:gym.name }}">
+        </div>
       {% empty %}
-        <div class="empty-box">No photos uploaded yet. Owners can add gym photos from Django admin.</div>
+        <div class="col-12"><div class="empty-state">No gallery photos uploaded yet.</div></div>
       {% endfor %}
     </div>
   </section>
 
-  <section>
-    <h2>Facilities</h2>
-    <div class="tags">
-      {% for f in gym.facilities.all %}<span>{{ f.name }}</span>{% empty %}<span>No facilities listed yet</span>{% endfor %}
-    </div>
-  </section>
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <section class="neo-panel p-4 mb-4">
+        <p class="section-kicker">Facilities</p><h2 class="fw-bold h3">What this gym offers</h2>
+        <div>{% for f in gym.facilities.all %}<span class="chip me-2 mb-2">{{ f.name }}</span>{% empty %}<span class="text-muted">No facilities listed yet.</span>{% endfor %}</div>
+      </section>
 
-  <section>
-    <h2>Plans</h2>
-    <div class="grid">
-      {% for plan in gym.plans.all %}
-        <article class="card">
-          <h3>{{ plan.title }}</h3>
-          <p>{{ plan.description|default:'Flexible gym access plan.' }}</p>
-          <strong>€{{ plan.price }}</strong>
-          <p>{{ plan.duration_days }} day(s)</p>
-        </article>
-      {% empty %}
-        <p>No plans yet.</p>
-      {% endfor %}
-    </div>
-  </section>
+      <section class="mb-4">
+        <p class="section-kicker">Plans</p><h2 class="fw-bold h3 mb-3">Membership options</h2>
+        <div class="row g-3">
+          {% for plan in gym.plans.all %}
+            <div class="col-md-6"><article class="neo-panel p-4 h-100"><h3 class="h5 fw-bold">{{ plan.title }}</h3><p class="text-muted">{{ plan.description|default:'Flexible gym access plan.' }}</p><strong class="display-6">€{{ plan.price }}</strong><span class="text-muted d-block">{{ plan.duration_days }} day(s)</span></article></div>
+          {% empty %}<p class="text-muted">No plans yet.</p>{% endfor %}
+        </div>
+      </section>
 
-  <section>
-    <h2>Trainers</h2>
-    <div class="grid">
-      {% for trainer in gym.trainers.all %}
-        <article class="card">
-          <h3>{{ trainer.user.get_full_name|default:trainer.user.username }}</h3>
-          <p>{{ trainer.specialties }}</p>
-          <p>{{ trainer.bio }}</p>
-          {% if trainer.hourly_rate %}<strong>€{{ trainer.hourly_rate }}/hour</strong>{% endif %}
-        </article>
-      {% empty %}
-        <p>No trainers listed yet.</p>
-      {% endfor %}
-    </div>
-  </section>
+      <section class="mb-4">
+        <p class="section-kicker">Coaches</p><h2 class="fw-bold h3 mb-3">Trainers</h2>
+        <div class="row g-3">
+          {% for trainer in gym.trainers.all %}
+            <div class="col-md-6"><article class="neo-panel p-4 h-100"><h3 class="h5 fw-bold">{{ trainer.user.get_full_name|default:trainer.user.username }}</h3><p class="text-primary fw-semibold">{{ trainer.specialties }}</p><p class="text-muted">{{ trainer.bio }}</p>{% if trainer.hourly_rate %}<strong>€{{ trainer.hourly_rate }}/hour</strong>{% endif %}</article></div>
+          {% empty %}<p class="text-muted">No trainers listed yet.</p>{% endfor %}
+        </div>
+      </section>
 
-  <section>
-    <h2>Book a trial</h2>
-    {% if user.is_authenticated %}
-      <form method="post" action="{% url 'create_booking' gym.id %}" class="form-card">
-        {% csrf_token %}
-        <label>Choose date and time</label>
-        <input type="datetime-local" name="booking_datetime" required>
-        <textarea name="customer_note" placeholder="Optional note for the gym owner"></textarea>
-        <button>Send booking request</button>
-      </form>
-    {% else %}
-      <p><a href="{% url 'login' %}">Login</a> to book a trial.</p>
-    {% endif %}
-  </section>
-
-  <section>
-    <h2>Reviews</h2>
-    <div class="reviews">
-      {% for review in gym.reviews.all %}
-        {% if review.is_visible %}
-          <article class="review-card">
-            <strong>{{ review.user.username }}</strong>
-            <span>{{ review.rating }}/5 ★</span>
-            <p>{{ review.comment }}</p>
-            <small>{{ review.created_at|date:'d M Y' }}</small>
-          </article>
-        {% endif %}
-      {% empty %}
-        <p>No reviews yet. Be the first one.</p>
-      {% endfor %}
+      <section class="neo-panel p-4">
+        <p class="section-kicker">Social proof</p><h2 class="fw-bold h3 mb-3">Reviews</h2>
+        <div class="vstack gap-3 mb-4">
+          {% for review in gym.reviews.all %}{% if review.is_visible %}<article class="review-card"><div class="d-flex justify-content-between"><strong>{{ review.user.username }}</strong><span class="text-warning">{{ review.rating }}/5 ★</span></div><p class="mb-1 text-muted">{{ review.comment }}</p><small class="text-muted">{{ review.created_at|date:'d M Y' }}</small></article>{% endif %}{% empty %}<p class="text-muted">No reviews yet. Be the first one.</p>{% endfor %}
+        </div>
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'create_review' gym.id %}" class="vstack gap-3">
+            {% csrf_token %}<select class="form-select" name="rating" required><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Okay</option><option value="2">2 - Poor</option><option value="1">1 - Bad</option></select><textarea class="form-control" name="comment" placeholder="Share your experience..." required></textarea><button class="btn btn-dark rounded-pill align-self-start">Submit review</button>
+          </form>
+        {% else %}<p><a href="{% url 'login' %}">Login</a> to write a review.</p>{% endif %}
+      </section>
     </div>
 
-    {% if user.is_authenticated %}
-      <form method="post" action="{% url 'create_review' gym.id %}" class="form-card">
-        {% csrf_token %}
-        <label>Your rating</label>
-        <select name="rating" required>
-          <option value="5">5 - Excellent</option>
-          <option value="4">4 - Good</option>
-          <option value="3">3 - Okay</option>
-          <option value="2">2 - Poor</option>
-          <option value="1">1 - Bad</option>
-        </select>
-        <textarea name="comment" placeholder="Share your experience..." required></textarea>
-        <button>Submit review</button>
-      </form>
-    {% else %}
-      <p><a href="{% url 'login' %}">Login</a> to write a review.</p>
-    {% endif %}
-  </section>
-</article>
+    <div class="col-lg-4">
+      <section id="book" class="neo-panel p-4 sticky-lg-top booking-card">
+        <h2 class="h4 fw-bold">Book a trial</h2>
+        <p class="text-muted">Send a booking request to the gym owner.</p>
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'create_booking' gym.id %}" class="vstack gap-3">
+            {% csrf_token %}<input class="form-control" type="datetime-local" name="booking_datetime" required><textarea class="form-control" name="customer_note" placeholder="Optional note for the gym owner"></textarea><button class="btn btn-primary rounded-pill">Send booking request</button>
+          </form>
+        {% else %}<a class="btn btn-primary rounded-pill w-100" href="{% url 'login' %}">Login to book</a>{% endif %}
+      </section>
+    </div>
+  </div>
+</div>
 {% endblock %}

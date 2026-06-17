@@ -1,64 +1,20 @@
 {% extends 'base.html' %}
+{% block title %}My Dashboard · myGym{% endblock %}
 {% block content %}
-<h1>My Dashboard</h1>
-<p class="muted">Your bookings, saved gyms, and reviews in one place.</p>
-
-<section class="stats-grid">
-  <article class="stat-card"><strong>{{ stats.bookings }}</strong><span>Total bookings</span></article>
-  <article class="stat-card"><strong>{{ stats.pending_bookings }}</strong><span>Pending</span></article>
-  <article class="stat-card"><strong>{{ stats.favorites }}</strong><span>Saved gyms</span></article>
-  <article class="stat-card"><strong>{{ stats.reviews }}</strong><span>Reviews</span></article>
+<section class="dashboard-hero py-5 text-white">
+  <div class="container"><p class="section-kicker text-white-50">Customer workspace</p><h1 class="display-5 fw-black">My Dashboard</h1><p class="lead text-white-75">Your bookings, saved gyms, and reviews in one place.</p></div>
 </section>
-
-<section class="dashboard-grid">
-  <article class="card">
-    <h2>Recent bookings</h2>
-    {% for booking in bookings %}
-      <div class="list-row">
-        <div>
-          <strong>{{ booking.gym.name }}</strong>
-          <p>{{ booking.booking_datetime|date:'d M Y, H:i' }} · <span class="status-pill status-{{ booking.status|lower }}">{{ booking.status }}</span></p>
-        </div>
-        <div class="row-actions">
-          <a href="{% url 'gym_detail' booking.gym.slug %}">Open</a>
-          {% if booking.status == 'PENDING' or booking.status == 'CONFIRMED' %}
-            <form action="{% url 'cancel_own_booking' booking.id %}" method="post" class="inline-form">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-muted">Cancel</button>
-            </form>
-          {% endif %}
-        </div>
-      </div>
-    {% empty %}
-      <p>No bookings yet. Time to find your next gym.</p>
-    {% endfor %}
-  </article>
-
-  <article class="card">
-    <h2>Saved gyms</h2>
-    {% for favorite in favorites %}
-      <div class="list-row">
-        <div>
-          <strong>{{ favorite.gym.name }}</strong>
-          <p>{{ favorite.gym.city }} · from €{{ favorite.gym.starting_price }}</p>
-        </div>
-        <a href="{% url 'gym_detail' favorite.gym.slug %}">View</a>
-      </div>
-    {% empty %}
-      <p>No saved gyms yet.</p>
-    {% endfor %}
-  </article>
-
-  <article class="card">
-    <h2>Your reviews</h2>
-    {% for review in reviews %}
-      <div class="list-row vertical">
-        <strong>{{ review.gym.name }} · {{ review.rating }}/5</strong>
-        <p>{{ review.comment|truncatewords:20 }}</p>
-      </div>
-    {% empty %}
-      <p>No reviews yet.</p>
-    {% endfor %}
-  </article>
-</section>
+<div class="container py-5">
+  <div class="row g-4 mb-4">
+    <div class="col-6 col-lg-3"><div class="stat-card"><strong>{{ stats.bookings }}</strong><span>Total bookings</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-card"><strong>{{ stats.pending_bookings }}</strong><span>Pending</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-card"><strong>{{ stats.favorites }}</strong><span>Saved gyms</span></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-card"><strong>{{ stats.reviews }}</strong><span>Reviews</span></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-lg-7"><article class="card border-0 shadow-sm rounded-5 p-4"><h2 class="h4 fw-bold mb-3">Recent bookings</h2>{% for booking in bookings %}<div class="list-row"><div><strong>{{ booking.gym.name }}</strong><p>{{ booking.booking_datetime|date:'d M Y, H:i' }} · <span class="status-pill status-{{ booking.status|lower }}">{{ booking.status }}</span></p></div><div class="row-actions"><a class="btn btn-sm btn-light rounded-pill" href="{% url 'gym_detail' booking.gym.slug %}">Open</a>{% if booking.status == 'PENDING' or booking.status == 'CONFIRMED' %}<form action="{% url 'cancel_own_booking' booking.id %}" method="post" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill">Cancel</button></form>{% endif %}</div></div>{% empty %}<div class="empty-state">No bookings yet. Time to find your next gym.</div>{% endfor %}</article></div>
+    <div class="col-lg-5"><article class="card border-0 shadow-sm rounded-5 p-4"><h2 class="h4 fw-bold mb-3">Saved gyms</h2>{% for favorite in favorites %}<div class="list-row"><div><strong>{{ favorite.gym.name }}</strong><p>{{ favorite.gym.city }} · from €{{ favorite.gym.starting_price }}</p></div><a class="btn btn-sm btn-primary rounded-pill" href="{% url 'gym_detail' favorite.gym.slug %}">View</a></div>{% empty %}<div class="empty-state">No saved gyms yet.</div>{% endfor %}</article></div>
+    <div class="col-12"><article class="card border-0 shadow-sm rounded-5 p-4"><h2 class="h4 fw-bold mb-3">Your reviews</h2>{% for review in reviews %}<div class="list-row"><div><strong>{{ review.gym.name }} · {{ review.rating }}/5</strong><p>{{ review.comment|truncatewords:20 }}</p></div></div>{% empty %}<div class="empty-state">No reviews yet.</div>{% endfor %}</article></div>
+  </div>
+</div>
 {% endblock %}

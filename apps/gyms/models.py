@@ -46,6 +46,17 @@ class Gym(models.Model):
     def get_absolute_url(self):
         return f'/gyms/{self.slug}/'
 
+    @property
+    def cover_image(self):
+        cover = self.images.filter(is_cover=True).first()
+        if cover:
+            return cover
+        return self.images.first()
+
+    @property
+    def gallery_images(self):
+        return self.images.filter(is_cover=False)
+
 
 class GymImage(models.Model):
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='images')

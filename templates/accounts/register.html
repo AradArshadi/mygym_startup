@@ -1,2 +1,28 @@
 {% extends 'base.html' %}
-{% block content %}<h1>Create account</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button>Register</button></form>{% endblock %}
+{% block title %}Join · myGym{% endblock %}
+{% block content %}
+<section class="auth-shell neo-auth py-5">
+  <div class="container">
+    <div class="row align-items-center justify-content-center g-4">
+      <div class="col-lg-5">
+        <div class="auth-art d-none d-lg-block">
+          <span class="pill-label light">Start your journey</span>
+          <h1>One platform for gyms, trainers and members.</h1>
+          <p>Create a customer account or join as an owner to manage your gym presence.</p>
+        </div>
+      </div>
+      <div class="col-md-9 col-lg-6">
+        <div class="glass-light auth-card p-4 p-md-5">
+          <p class="section-kicker">Join myGym</p>
+          <h1 class="fw-black mb-4">Create account</h1>
+          <form method="post" class="vstack gap-3 auth-form">
+            {% csrf_token %}{{ form.as_p }}
+            <button class="btn btn-primary rounded-pill btn-lg">Register</button>
+          </form>
+          <p class="text-muted mt-4 mb-0">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
