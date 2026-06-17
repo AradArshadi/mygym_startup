@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <section class="hero">
   <h1>Find your next gym in seconds.</h1>
@@ -28,6 +29,7 @@
           <th>From</th>
           <th>Rating</th>
           <th>Facilities</th>
+          <th>Map</th>
           <th></th>
         </tr>
       </thead>
@@ -38,11 +40,12 @@
             <td>{{ gym.city }}</td>
             <td>€{{ gym.starting_price }}</td>
             <td>{{ gym.avg_rating|floatformat:1|default:'—' }}</td>
-            <td>{% for f in gym.facilities.all %}{{ f.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            <td>{% for f in gym.facilities.all %}{{ f.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+            <td>{% if gym.latitude and gym.longitude %}✓{% else %}—{% endif %}</td>
             <td><a class="btn small" href="{% url 'gym_detail' gym.slug %}">View</a></td>
           </tr>
         {% empty %}
-          <tr><td colspan="6">No gyms found.</td></tr>
+          <tr><td colspan="7">No gyms found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -50,25 +53,13 @@
 {% elif view_mode == 'map' %}
   <section class="card">
     <div id="gym-map"></div>
-    <p class="muted">Gyms without coordinates are not shown on the map yet.</p>
+    <p class="muted">Gyms without coordinates are listed below but not pinned on the map.</p>
   </section>
+  {{ map_gyms|json_script:"map-gyms-data" }}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const gyms = [
-      {% for gym in gyms %}
-        {% if gym.latitude and gym.longitude %}
-          {
-            name: "{{ gym.name|escapejs }}",
-            city: "{{ gym.city|escapejs }}",
-            price: "{{ gym.starting_price }}",
-            url: "{% url 'gym_detail' gym.slug %}",
-            lat: {{ gym.latitude }},
-            lng: {{ gym.longitude }}
-          },
-        {% endif %}
-      {% endfor %}
-    ];
+    const gyms = JSON.parse(document.getElementById('map-gyms-data').textContent);
     const map = L.map('gym-map').setView([49.8988, 10.9028], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -83,12 +74,22 @@
     if (markers.length) {
       const group = L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.2));
+    } else {
+      L.popup().setLatLng([49.8988, 10.9028]).setContent('No gyms with coordinates found yet.').openOn(map);
     }
+    setTimeout(() => map.invalidateSize(), 150);
   </script>
 {% else %}
   <section class="grid">
     {% for gym in gyms %}
-      <article class="card">
+      <article class="card gym-card">
+        {% with cover=gym.display_images.0 %}
+          {% if cover %}
+            <img class="gym-card-image" src="{{ cover.image.url }}" alt="{{ cover.alt_text|default:gym.name }}">
+          {% else %}
+            <div class="gym-card-placeholder">{{ gym.name|slice:':1' }}</div>
+          {% endif %}
+        {% endwith %}
         <h2>{{ gym.name }}</h2>
         <p>{{ gym.city }} · from €{{ gym.starting_price }}</p>
         <p>{{ gym.description|truncatewords:18 }}</p>

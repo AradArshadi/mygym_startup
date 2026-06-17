@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Owner Dashboard</h1>
+<section class="page-header"><div><p class="eyebrow">Owner Workspace</p><h1>Owner Dashboard</h1></div><a class="btn" href="{% url 'owner_gym_create' %}">+ Add Gym</a></section>
 
 <div class="stats-row">
   <article class="stat-card"><span>Pending bookings</span><strong>{{ total_pending }}</strong></article>
@@ -11,6 +11,8 @@
 {% for gym in gyms %}
   <article class="card wide-card">
     <h2>{{ gym.name }}</h2>
+    <p class="muted">Status: <strong>{{ gym.get_status_display }}</strong></p>
+    <div class="actions-row"><a class="btn btn-sm" href="{% url 'owner_gym_manage' gym.slug %}">Manage gym</a><a class="btn btn-sm btn-muted" href="{% url 'owner_gym_edit' gym.slug %}">Edit info</a></div>
     <div class="mini-stats">
       <span>Views: {{ gym.total_views }}</span>
       <span>Bookings: {{ gym.total_bookings }}</span>
@@ -68,7 +70,7 @@
     </div>
   </article>
 {% empty %}
-  <p>You do not own any gyms yet.</p>
+  <article class="card"><h2>No gyms yet</h2><p>Create your first gym profile and submit it for admin approval.</p><a class="btn" href="{% url 'owner_gym_create' %}">Add your first gym</a></article>
 {% endfor %}
 </div>
 {% endblock %}

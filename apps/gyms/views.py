@@ -1,12 +1,35 @@
-from django.db.models import Avg, Q
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Avg, Prefetch, Q
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.shortcuts import get_object_or_404, render
+
 from apps.analytics.models import GymView, SearchLog
-from .models import Gym
+from .forms import GymForm, GymImageForm, MembershipPlanForm, TrainerProfileForm
+from .models import Gym, GymImage, MembershipPlan, TrainerProfile
+
+
+def owner_required(user):
+    return user.is_authenticated and (user.role == 'OWNER' or user.is_staff or user.role == 'ADMIN')
+
+
+def get_owner_gym_or_403(request, slug):
+    gym = get_object_or_404(Gym, slug=slug)
+    if not (request.user.is_staff or request.user.role == 'ADMIN' or gym.owner == request.user):
+        raise PermissionDenied('You can only manage gyms that belong to you.')
+    return gym
 
 
 def gym_list(request):
-    gyms = Gym.objects.filter(status=Gym.Status.APPROVED).prefetch_related('facilities').annotate(avg_rating=Avg('reviews__rating'))
+    gyms = (
+        Gym.objects.filter(status=Gym.Status.APPROVED)
+        .prefetch_related(
+            'facilities',
+            Prefetch('images', queryset=GymImage.objects.order_by('-is_cover', 'id'), to_attr='display_images'),
+        )
+        .annotate(avg_rating=Avg('reviews__rating'))
+    )
     query = request.GET.get('q', '').strip()
     city = request.GET.get('city', '').strip()
     max_price = request.GET.get('max_price', '').strip()
@@ -16,7 +39,10 @@ def gym_list(request):
     if city:
         gyms = gyms.filter(city__icontains=city)
     if max_price:
-        gyms = gyms.filter(starting_price__lte=max_price)
+        try:
+            gyms = gyms.filter(starting_price__lte=max_price)
+        except ValueError:
+            messages.warning(request, 'Max price must be a number.')
 
     if query or city:
         SearchLog.objects.create(user=request.user if request.user.is_authenticated else None, query=query, city=city)
@@ -24,8 +50,23 @@ def gym_list(request):
     view_mode = request.GET.get('view', 'cards')
     if view_mode not in ['cards', 'table', 'map']:
         view_mode = 'cards'
+
+    gym_list_items = list(gyms)
+    map_gyms = []
+    for gym in gym_list_items:
+        if gym.latitude is not None and gym.longitude is not None:
+            map_gyms.append({
+                'name': gym.name,
+                'city': gym.city,
+                'price': str(gym.starting_price),
+                'url': request.build_absolute_uri(gym.get_absolute_url()) if hasattr(gym, 'get_absolute_url') else f'/gyms/{gym.slug}/',
+                'lat': float(gym.latitude),
+                'lng': float(gym.longitude),
+            })
+
     return render(request, 'gyms/gym_list.html', {
-        'gyms': gyms,
+        'gyms': gym_list_items,
+        'map_gyms': map_gyms,
         'query': query,
         'city': city,
         'max_price': max_price,
@@ -34,10 +75,13 @@ def gym_list(request):
 
 
 def gym_detail(request, slug):
-    gym = get_object_or_404(Gym.objects.prefetch_related('facilities', 'plans', 'trainers'), slug=slug, status=Gym.Status.APPROVED)
+    gym = get_object_or_404(
+        Gym.objects.prefetch_related('facilities', 'plans', 'trainers', 'images', 'reviews'),
+        slug=slug,
+        status=Gym.Status.APPROVED,
+    )
     if not request.session.session_key:
         request.session.create()
-    # Count one profile view per gym/session/day. Refreshing the page should not spam analytics.
     already_counted_today = GymView.objects.filter(
         gym=gym,
         session_key=request.session.session_key or '',
@@ -51,3 +95,124 @@ def gym_detail(request, slug):
             ip_address=request.META.get('REMOTE_ADDR'),
         )
     return render(request, 'gyms/gym_detail.html', {'gym': gym})
+
+
+@login_required
+def owner_gym_create(request):
+    if not owner_required(request.user):
+        raise PermissionDenied('Only gym owners can create gyms.')
+    if request.method == 'POST':
+        form = GymForm(request.POST)
+        if form.is_valid():
+            gym = form.save(commit=False)
+            gym.owner = request.user
+            gym.status = Gym.Status.PENDING
+            gym.save()
+            form.save_m2m()
+            messages.success(request, 'Gym created and submitted for admin approval.')
+            return redirect('owner_gym_manage', slug=gym.slug)
+    else:
+        form = GymForm()
+    return render(request, 'gyms/owner_gym_form.html', {'form': form, 'title': 'Add new gym'})
+
+
+@login_required
+def owner_gym_edit(request, slug):
+    gym = get_owner_gym_or_403(request, slug)
+    if request.method == 'POST':
+        form = GymForm(request.POST, instance=gym)
+        if form.is_valid():
+            gym = form.save(commit=False)
+            # Keep already-approved gyms visible after simple owner edits like lat/lng or photos.
+            # New gyms still start as PENDING in owner_gym_create. Admin can still reject/remove listings.
+            gym.save()
+            form.save_m2m()
+            messages.success(request, 'Gym updated successfully.')
+            return redirect('owner_gym_manage', slug=gym.slug)
+    else:
+        form = GymForm(instance=gym)
+    return render(request, 'gyms/owner_gym_form.html', {'form': form, 'gym': gym, 'title': f'Edit {gym.name}'})
+
+
+@login_required
+def owner_gym_manage(request, slug):
+    gym = get_owner_gym_or_403(request, slug)
+    return render(request, 'gyms/owner_gym_manage.html', {
+        'gym': gym,
+        'plan_form': MembershipPlanForm(),
+        'trainer_form': TrainerProfileForm(),
+        'image_form': GymImageForm(),
+    })
+
+
+@login_required
+def owner_plan_add(request, slug):
+    gym = get_owner_gym_or_403(request, slug)
+    if request.method == 'POST':
+        form = MembershipPlanForm(request.POST)
+        if form.is_valid():
+            plan = form.save(commit=False)
+            plan.gym = gym
+            plan.save()
+            messages.success(request, 'Membership plan added.')
+    return redirect('owner_gym_manage', slug=gym.slug)
+
+
+@login_required
+def owner_plan_delete(request, slug, plan_id):
+    gym = get_owner_gym_or_403(request, slug)
+    plan = get_object_or_404(MembershipPlan, id=plan_id, gym=gym)
+    if request.method == 'POST':
+        plan.delete()
+        messages.success(request, 'Membership plan deleted.')
+    return redirect('owner_gym_manage', slug=gym.slug)
+
+
+@login_required
+def owner_trainer_add(request, slug):
+    gym = get_owner_gym_or_403(request, slug)
+    if request.method == 'POST':
+        form = TrainerProfileForm(request.POST)
+        if form.is_valid():
+            trainer = form.save(commit=False)
+            trainer.gym = gym
+            trainer.save()
+            messages.success(request, 'Trainer added to gym.')
+        else:
+            messages.error(request, 'Trainer could not be added. Make sure the selected user is not already attached to another trainer profile.')
+    return redirect('owner_gym_manage', slug=gym.slug)
+
+
+@login_required
+def owner_trainer_delete(request, slug, trainer_id):
+    gym = get_owner_gym_or_403(request, slug)
+    trainer = get_object_or_404(TrainerProfile, id=trainer_id, gym=gym)
+    if request.method == 'POST':
+        trainer.delete()
+        messages.success(request, 'Trainer removed from gym.')
+    return redirect('owner_gym_manage', slug=gym.slug)
+
+
+@login_required
+def owner_image_add(request, slug):
+    gym = get_owner_gym_or_403(request, slug)
+    if request.method == 'POST':
+        form = GymImageForm(request.POST, request.FILES)
+        if form.is_valid():
+            image = form.save(commit=False)
+            image.gym = gym
+            image.save()
+            messages.success(request, 'Photo uploaded.')
+        else:
+            messages.error(request, 'Photo upload failed.')
+    return redirect('owner_gym_manage', slug=gym.slug)
+
+
+@login_required
+def owner_image_delete(request, slug, image_id):
+    gym = get_owner_gym_or_403(request, slug)
+    image = get_object_or_404(GymImage, id=image_id, gym=gym)
+    if request.method == 'POST':
+        image.delete()
+        messages.success(request, 'Photo deleted.')
+    return redirect('owner_gym_manage', slug=gym.slug)

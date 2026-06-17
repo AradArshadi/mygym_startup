@@ -43,6 +43,9 @@ class Gym(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return f'/gyms/{self.slug}/'
+
 
 class GymImage(models.Model):
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='images')

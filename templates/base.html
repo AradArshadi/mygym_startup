@@ -15,6 +15,7 @@
       <a href="{% url 'notification_list' %}">Notifications</a>
       {% if user.role == 'OWNER' %}
         <a href="{% url 'owner_dashboard' %}">Owner Dashboard</a>
+        <a href="{% url 'owner_gym_create' %}">Add Gym</a>
       {% else %}
         <a href="{% url 'customer_dashboard' %}">My Dashboard</a>
       {% endif %}

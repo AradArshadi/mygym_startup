@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Gym Control Center</p>
+    <h1>{{ gym.name }}</h1>
+    <p class="muted">Status: <strong>{{ gym.get_status_display }}</strong></p>
+  </div>
+  <div class="actions-row">
+    <a class="btn btn-muted" href="{% url 'owner_dashboard' %}">Dashboard</a>
+    <a class="btn" href="{% url 'owner_gym_edit' gym.slug %}">Edit gym info</a>
+  </div>
+</section>
+
+<div class="grid two-columns">
+  <article class="card wide-card">
+    <h2>Membership plans</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Title</th><th>Price</th><th>Duration</th><th>Trial</th><th></th></tr></thead>
+        <tbody>
+          {% for plan in gym.plans.all %}
+            <tr>
+              <td>{{ plan.title }}</td>
+              <td>€{{ plan.price }}</td>
+              <td>{{ plan.duration_days }} days</td>
+              <td>{{ plan.is_trial|yesno:'Yes,No' }}</td>
+              <td>
+                <form method="post" action="{% url 'owner_plan_delete' gym.slug plan.id %}" class="inline-form">
+                  {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">No plans yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h3>Add plan</h3>
+    <form method="post" action="{% url 'owner_plan_add' gym.slug %}" class="compact-form">
+      {% csrf_token %}
+      {{ plan_form.as_p }}
+      <button class="btn" type="submit">Add plan</button>
+    </form>
+  </article>
+
+  <article class="card wide-card">
+    <h2>Trainers</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Trainer</th><th>Specialties</th><th>Rate</th><th>Available</th><th></th></tr></thead>
+        <tbody>
+          {% for trainer in gym.trainers.all %}
+            <tr>
+              <td>{{ trainer.user.get_full_name|default:trainer.user.username }}</td>
+              <td>{{ trainer.specialties }}</td>
+              <td>{% if trainer.hourly_rate %}€{{ trainer.hourly_rate }}{% else %}—{% endif %}</td>
+              <td>{{ trainer.is_available|yesno:'Yes,No' }}</td>
+              <td>
+                <form method="post" action="{% url 'owner_trainer_delete' gym.slug trainer.id %}" class="inline-form">
+                  {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Remove</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">No trainers yet. Register trainer users first, then attach them here.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h3>Add trainer</h3>
+    <form method="post" action="{% url 'owner_trainer_add' gym.slug %}" class="compact-form">
+      {% csrf_token %}
+      {{ trainer_form.as_p }}
+      <button class="btn" type="submit">Add trainer</button>
+    </form>
+  </article>
+
+  <article class="card wide-card full-span">
+    <h2>Photos</h2>
+    <div class="photo-grid">
+      {% for image in gym.images.all %}
+        <div class="photo-card">
+          <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:gym.name }}">
+          <p>{{ image.alt_text|default:'Gym photo' }} {% if image.is_cover %}<strong>Cover</strong>{% endif %}</p>
+          <form method="post" action="{% url 'owner_image_delete' gym.slug image.id %}">
+            {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete photo</button>
+          </form>
+        </div>
+      {% empty %}
+        <p>No photos uploaded yet.</p>
+      {% endfor %}
+    </div>
+    <h3>Upload photo</h3>
+    <form method="post" enctype="multipart/form-data" action="{% url 'owner_image_add' gym.slug %}" class="compact-form">
+      {% csrf_token %}
+      {{ image_form.as_p }}
+      <button class="btn" type="submit">Upload photo</button>
+    </form>
+  </article>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Owner Studio</p>
+    <h1>{{ title }}</h1>
+    <p class="muted">New and edited gyms stay pending until admin approval, so the marketplace remains trustworthy.</p>
+  </div>
+  <a class="btn btn-muted" href="{% url 'owner_dashboard' %}">Back to dashboard</a>
+</section>
+
+<form method="post" class="form-card">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn" type="submit">Save gym</button>
+</form>
+{% endblock %}

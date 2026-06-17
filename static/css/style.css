@@ -110,3 +110,107 @@ th { color: #475569; font-size: .9rem; }
 .status-confirmed { background: #dcfce7; color: #166534; }
 .status-rejected { background: #fee2e2; color: #991b1b; }
 .status-cancelled { background: #e2e8f0; color: #475569; }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.eyebrow {
+  margin: 0 0 .25rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .75rem;
+  opacity: .7;
+}
+
+.muted {
+  opacity: .75;
+}
+
+.actions-row {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.two-columns {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+.form-card,
+.compact-form {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.form-card p,
+.compact-form p {
+  display: grid;
+  gap: .35rem;
+}
+
+.form-card input,
+.form-card textarea,
+.form-card select,
+.compact-form input,
+.compact-form textarea,
+.compact-form select {
+  width: 100%;
+  padding: .65rem .75rem;
+  border: 1px solid #d1d5db;
+  border-radius: .7rem;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.photo-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: .75rem;
+  background: #fafafa;
+}
+
+.photo-card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: .75rem;
+}
+
+.gym-card-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 1rem;
+}
+.gym-card-placeholder {
+  width: 100%;
+  height: 180px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: #eef2f7;
+  color: #64748b;
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+#gym-map {
+  min-height: 520px;
+}
