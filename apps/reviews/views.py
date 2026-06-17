@@ -4,6 +4,8 @@ from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect
 from apps.gyms.models import Gym
 from .models import Review
+from apps.emails.services import send_review_notice_to_owner
+from apps.systemlogs.services import log_event
 
 
 @login_required
@@ -30,7 +32,7 @@ def create_review(request, gym_id):
         return redirect('gym_detail', slug=gym.slug)
 
     try:
-        Review.objects.create(user=request.user, gym=gym, rating=rating, comment=comment)
+        review = Review.objects.create(user=request.user, gym=gym, rating=rating, comment=comment)
     except IntegrityError:
         messages.error(request, 'You already reviewed this gym.')
         return redirect('gym_detail', slug=gym.slug)
@@ -47,6 +49,9 @@ def create_review(request, gym_id):
         )
     except Exception:
         pass
+
+    send_review_notice_to_owner(review, actor=request.user, request=request)
+    log_event(level='INFO', category='REVIEW', event='review_created', message=f'{request.user.username} reviewed {gym.name}', actor=request.user, request=request, related_model='Review', related_id=review.id, metadata={'rating': rating})
 
     messages.success(request, 'Review submitted. Thanks for helping other customers!')
     return redirect('gym_detail', slug=gym.slug)

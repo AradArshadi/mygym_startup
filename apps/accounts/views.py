@@ -1,10 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
-from django.core.mail import send_mail
 from django.shortcuts import redirect, render
-from django.conf import settings
 from .models import User
+from apps.emails.services import send_welcome_email
+from apps.systemlogs.services import log_event
 
 
 class RegisterForm(UserCreationForm):
@@ -18,13 +18,8 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            send_mail(
-                subject='Welcome to myGym',
-                message=f'Hi {user.username}, welcome to myGym. Your account type is {user.get_role_display()}.',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email] if user.email else [],
-                fail_silently=True,
-            )
+            send_welcome_email(user, request=request)
+            log_event(level='INFO', category='AUTH', event='user_registered', message=f'{user.username} registered as {user.role}', actor=user, request=request, related_model='User', related_id=user.id)
             login(request, user)
             messages.success(request, 'Welcome to myGym!')
             return redirect('gym_list')

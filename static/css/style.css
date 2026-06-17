@@ -35,3 +35,52 @@ body{background:
 .footer-link:hover {
   color: var(--primary);
 }
+
+/* Control Deck */
+.control-shell {
+  background:
+    radial-gradient(circle at top left, rgba(255,90,31,.18), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(17,17,17,.08), transparent 32rem),
+    var(--bg-main, #f5f1ea);
+  min-height: 80vh;
+}
+.control-sidebar { top: 6rem; }
+.control-nav-link {
+  color: var(--text-main, #151515);
+  text-decoration: none;
+  padding: .8rem 1rem;
+  border-radius: 999px;
+  font-weight: 800;
+  transition: .2s ease;
+}
+.control-nav-link:hover,
+.control-nav-link.active {
+  background: var(--secondary, #111);
+  color: #fff;
+}
+.metric-card {
+  padding: 1.4rem;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.metric-card span { color: var(--text-muted, #6f6a63); font-weight: 800; }
+.metric-card strong { font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1; font-weight: 950; }
+.metric-card small { color: var(--text-muted, #6f6a63); }
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: .35rem .7rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 900;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255,255,255,.65);
+}
+.status-pending { color: #a16207; background: rgba(245,185,66,.18); }
+.status-approved, .status-confirmed { color: #047857; background: rgba(32,201,151,.16); }
+.status-rejected, .status-cancelled { color: #b91c1c; background: rgba(239,68,68,.14); }
+@media (max-width: 991px) {
+  .control-sidebar { position: static !important; }
+}

@@ -21,6 +21,9 @@ INSTALLED_APPS = [
     'apps.analytics',
     'apps.dashboard',
     'apps.notifications',
+    'apps.controlpanel',
+    'apps.emails',
+    'apps.systemlogs',
 ]
 
 MIDDLEWARE = [
@@ -31,6 +34,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.systemlogs.middleware.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -87,14 +91,86 @@ TIME_ZONE = 'Europe/Berlin'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='myGym <noreply@mygym.local>')
+SUPPORT_EMAIL = config('SUPPORT_EMAIL', default=DEFAULT_FROM_EMAIL)
+SITE_URL = config('SITE_URL', default='')
 LOGIN_REDIRECT_URL = 'gym_list'
 LOGOUT_REDIRECT_URL = 'gym_list'
+
+
+# Logging / observability
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+LOG_LEVEL = config('LOG_LEVEL', default='INFO')
+LOG_ALL_REQUESTS = config('LOG_ALL_REQUESTS', default=False, cast=bool)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name} {module}:{lineno} - {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'app_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'mygym.log',
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'email_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'emails.log',
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'app_file'],
+            'level': LOG_LEVEL,
+            'propagate': True,
+        },
+        'mygym.events': {
+            'handlers': ['console', 'app_file'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'mygym.requests': {
+            'handlers': ['console', 'app_file'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'mygym.emails': {
+            'handlers': ['console', 'email_file'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}

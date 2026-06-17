@@ -1,11 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.dateparse import parse_datetime
-from django.conf import settings
 from apps.gyms.models import Gym
 from .models import Booking
+from apps.emails.services import send_booking_created_to_owner, send_booking_status_to_customer
+from apps.systemlogs.services import log_event
 
 
 @login_required
@@ -28,14 +28,8 @@ def create_booking(request, gym_id):
             messages.warning(request, 'You already have a booking request for this gym at this time.')
             return redirect('gym_detail', slug=gym.slug)
 
-        if gym.email:
-            send_mail(
-                'New booking request on myGym',
-                f'{request.user.username} requested a booking for {gym.name} at {booking.booking_datetime}.',
-                settings.DEFAULT_FROM_EMAIL,
-                [gym.email],
-                fail_silently=True,
-            )
+        send_booking_created_to_owner(booking, actor=request.user, request=request)
+        log_event(level='INFO', category='BOOKING', event='booking_created', message=f'Booking request for {gym.name}', actor=request.user, request=request, related_model='Booking', related_id=booking.id)
 
         try:
             from apps.notifications.models import Notification
@@ -109,14 +103,8 @@ def update_booking_status(request, booking_id, status):
     except Exception:
         pass
 
-    if booking.customer.email:
-        send_mail(
-            f'myGym booking {action_text}',
-            f'Your booking request for {booking.gym.name} at {booking.booking_datetime} was {action_text}.',
-            settings.DEFAULT_FROM_EMAIL,
-            [booking.customer.email],
-            fail_silently=True,
-        )
+    send_booking_status_to_customer(booking, action_text, actor=request.user, request=request)
+    log_event(level='INFO', category='BOOKING', event='booking_status_updated', message=f'Booking {booking.id} moved from {old_status} to {new_status}', actor=request.user, request=request, related_model='Booking', related_id=booking.id, metadata={'old_status': old_status, 'new_status': new_status})
 
     messages.success(request, f'Booking moved from {old_status} to {new_status}.')
     return redirect('owner_dashboard')
@@ -155,5 +143,6 @@ def cancel_own_booking(request, booking_id):
     except Exception:
         pass
 
+    log_event(level='INFO', category='BOOKING', event='booking_cancelled_by_customer', message=f'Customer cancelled booking {booking.id}', actor=request.user, request=request, related_model='Booking', related_id=booking.id)
     messages.success(request, 'Booking cancelled.')
     return redirect('customer_dashboard')

@@ -23,6 +23,9 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'gym_list' %}">Explore</a></li>
         {% if user.is_authenticated %}
           <li class="nav-item"><a class="nav-link position-relative" href="{% url 'notification_list' %}">Notifications</a></li>
+          {% if user.is_staff or user.is_superuser or user.role == 'ADMIN' %}
+            <li class="nav-item"><a class="btn btn-dark rounded-pill px-3 w-100 w-lg-auto" href="{% url 'control_overview' %}">Control Deck</a></li>
+          {% endif %}
           {% if user.role == 'OWNER' %}
             <li class="nav-item"><a class="nav-link" href="{% url 'owner_dashboard' %}">Owner Dashboard</a></li>
             <li class="nav-item"><a class="btn btn-primary rounded-pill px-4 w-100 w-lg-auto" href="{% url 'owner_gym_create' %}">Add Gym</a></li>
