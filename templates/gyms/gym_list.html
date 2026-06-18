@@ -60,7 +60,7 @@
                 <td>{{ gym.avg_rating|floatformat:1|default:'—' }}</td>
                 <td>{% for f in gym.facilities.all %}<span class="chip me-1">{{ f.name }}</span>{% empty %}—{% endfor %}</td>
                 <td>{% if gym.latitude and gym.longitude %}<span class="status-pill status-confirmed">Pinned</span>{% else %}<span class="status-pill">No coords</span>{% endif %}</td>
-                <td><a class="btn btn-sm btn-primary rounded-pill" href="{% url 'gym_detail' gym.slug %}">View</a></td>
+                <td>{% if user.is_authenticated %}<a class="btn btn-sm btn-primary rounded-pill" href="{% url 'gym_detail' gym.slug %}">View</a>{% else %}<a class="btn btn-sm btn-primary rounded-pill" href="{% url 'login' %}?next={% url 'gym_detail' gym.slug %}">Login to view</a>{% endif %}</td>
               </tr>
             {% empty %}<tr><td colspan="7" class="text-center py-5 text-muted">No gyms found.</td></tr>{% endfor %}
           </tbody>
@@ -89,9 +89,9 @@
       {% for gym in gyms %}
         <div class="col-md-6 col-xl-4">
           <article class="neo-gym-card h-100">
-            <a class="gym-image-wrap" href="{% url 'gym_detail' gym.slug %}">
+            <a class="gym-image-wrap" href="{% if user.is_authenticated %}{% url 'gym_detail' gym.slug %}{% else %}{% url 'login' %}?next={% url 'gym_detail' gym.slug %}{% endif %}">
               {% with cover=gym.display_images.0 %}
-                {% if cover %}<img src="{{ cover.image.url }}" alt="{{ cover.alt_text|default:gym.name }}">{% else %}<div class="gym-card-placeholder">{{ gym.name|slice:':1' }}</div>{% endif %}
+                {% if cover %}<img src="{{ cover.image_url }}" alt="{{ cover.alt_text|default:gym.name }}">{% else %}<div class="gym-card-placeholder">{{ gym.name|slice:':1' }}</div>{% endif %}
               {% endwith %}
               <span class="price-chip">from €{{ gym.starting_price }}</span>
             </a>
@@ -100,7 +100,7 @@
               <h3 class="h4 fw-black mb-2">{{ gym.name }}</h3>
               <p class="text-muted mb-3">{{ gym.description|truncatewords:18 }}</p>
               <div class="mb-3">{% for f in gym.facilities.all %}<span class="chip me-1 mb-1">{{ f.name }}</span>{% endfor %}</div>
-              <a class="btn btn-dark rounded-pill w-100" href="{% url 'gym_detail' gym.slug %}">View gym</a>
+              {% if user.is_authenticated %}<a class="btn btn-dark rounded-pill w-100" href="{% url 'gym_detail' gym.slug %}">View gym</a>{% else %}<a class="btn btn-dark rounded-pill w-100" href="{% url 'login' %}?next={% url 'gym_detail' gym.slug %}">Login / signup to view</a>{% endif %}
             </div>
           </article>
         </div>

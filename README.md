@@ -126,3 +126,129 @@ Useful commands:
 tail -n 80 logs/emails.log
 tail -n 80 logs/mygym.log
 ```
+
+## v0.9.2.2 — Real Gym Import Pipeline
+
+This version replaces fake seed data with a safer import workflow for real public data.
+
+### What changed
+
+- Added `ImportBatch` model to group imported data.
+- Added import tracking fields on `Gym`:
+  - `is_imported`
+  - `is_claimed`
+  - `source`
+  - `external_id`
+  - `import_batch`
+  - `imported_at`
+- Added OpenStreetMap/Overpass import command.
+- Added safe wipe commands so imported data can be removed without touching owner-created gyms.
+
+### Run migrations
+
+```bash
+python manage.py makemigrations gyms
+python manage.py migrate
+```
+
+### Import gyms from OpenStreetMap
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran"
+```
+
+Import as approved immediately:
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --approve
+```
+
+Dry run:
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --dry-run
+```
+
+Limit records:
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --limit 25
+```
+
+### List import batches
+
+```bash
+python manage.py list_import_batches
+```
+
+### Wipe one import batch
+
+```bash
+python manage.py wipe_import_batch 1
+```
+
+If some imported gyms have bookings/reviews/favorites, they are protected by default. To delete them anyway:
+
+```bash
+python manage.py wipe_import_batch 1 --force
+```
+
+### Wipe imported gyms by city
+
+```bash
+python manage.py wipe_imported_gyms --city "Tabriz"
+```
+
+This never deletes owner-created gyms or claimed gyms.
+
+## v0.9.2.4 security/import hotfix notes
+
+### Emergency rollback for accidentally approved imports
+
+If a Geoapify batch was imported as approved, move it back to review/pending:
+
+```bash
+python manage.py mark_import_batch_pending 3
+```
+
+### Safer Geoapify importing
+
+`--approve` is now ignored unless it is deliberately combined with `--allow-auto-approve`.
+Default imported gyms stay `PENDING` for Control Deck review.
+
+```bash
+python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran" --radius-km 25 --limit 100
+```
+
+Unsafe demo-only auto approval:
+
+```bash
+python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran" --radius-km 25 --approve --allow-auto-approve
+```
+
+### Public signup role security
+
+The public register page now only allows:
+
+- Customer
+- Gym Owner
+
+Admin accounts cannot be created from public signup. Admin promotion is handled from the Control Deck, and promotion to `ADMIN` is restricted to Django superusers.
+
+### Test data reset trigger
+
+Delete imported, unclaimed test gyms safely:
+
+```bash
+python manage.py wipe_test_data --source geoapify --city Tabriz --yes --delete-empty-batches
+```
+
+Full demo/test cleanup, still protecting superusers and claimed gyms:
+
+```bash
+python manage.py wipe_test_data --yes --include-demo-users --delete-empty-batches
+```
+
+### Gym photos
+
+Owner-uploaded gym photos are already supported through gym management. Geoapify Places does not reliably provide gym photos, so imported gyms still use the current placeholder unless photos are uploaded later by an owner/admin.

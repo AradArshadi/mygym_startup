@@ -74,6 +74,7 @@ def gym_list(request):
     })
 
 
+@login_required(login_url='login')
 def gym_detail(request, slug):
     gym = get_object_or_404(
         Gym.objects.prefetch_related('facilities', 'plans', 'trainers', 'images', 'reviews'),

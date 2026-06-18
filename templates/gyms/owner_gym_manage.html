@@ -82,7 +82,7 @@
     <div class="photo-grid">
       {% for image in gym.images.all %}
         <div class="photo-card">
-          <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:gym.name }}">
+          <img src="{{ image.image_url }}" alt="{{ image.alt_text|default:gym.name }}">
           <p>{{ image.alt_text|default:'Gym photo' }} {% if image.is_cover %}<strong>Cover</strong>{% endif %}</p>
           <form method="post" action="{% url 'owner_image_delete' gym.slug image.id %}">
             {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete photo</button>

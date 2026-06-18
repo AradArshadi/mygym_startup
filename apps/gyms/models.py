@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 
 class Facility(models.Model):
@@ -12,6 +13,26 @@ class Facility(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ImportBatch(models.Model):
+    """Groups imported third-party data so demo/imported records can be audited or wiped safely."""
+
+    source = models.CharField(max_length=50, default='openstreetmap')
+    city = models.CharField(max_length=100)
+    country = models.CharField(max_length=100, blank=True)
+    query = models.TextField(blank=True)
+    total_found = models.PositiveIntegerField(default=0)
+    total_created = models.PositiveIntegerField(default=0)
+    total_updated = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.source} import for {self.city} ({self.created_at:%Y-%m-%d %H:%M})'
 
 
 class Gym(models.Model):
@@ -34,6 +55,15 @@ class Gym(models.Model):
     facilities = models.ManyToManyField(Facility, blank=True, related_name='gyms')
     starting_price = models.DecimalField(max_digits=8, decimal_places=2, validators=[MinValueValidator(0)])
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+
+    # Import/claim pipeline fields. These let us safely remove imported data without touching real owner-created gyms.
+    is_imported = models.BooleanField(default=False, db_index=True)
+    is_claimed = models.BooleanField(default=False, db_index=True)
+    source = models.CharField(max_length=50, blank=True, db_index=True)
+    external_id = models.CharField(max_length=255, blank=True, db_index=True)
+    import_batch = models.ForeignKey(ImportBatch, on_delete=models.SET_NULL, null=True, blank=True, related_name='gyms')
+    imported_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -57,12 +87,32 @@ class Gym(models.Model):
     def gallery_images(self):
         return self.images.filter(is_cover=False)
 
+    def mark_imported(self, source, external_id, batch=None):
+        self.is_imported = True
+        self.is_claimed = False
+        self.source = source
+        self.external_id = external_id
+        self.import_batch = batch
+        self.imported_at = timezone.now()
+
 
 class GymImage(models.Model):
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='gyms/')
+    image = models.ImageField(upload_to='gyms/', blank=True, null=True)
+    external_url = models.URLField(blank=True, help_text='Optional externally hosted image URL for imported/demo listings.')
+    source = models.CharField(max_length=50, blank=True, help_text='Image source, e.g. owner_upload, placeholder, google_places.')
+    credit = models.CharField(max_length=160, blank=True, help_text='Optional attribution/credit for external photos.')
     alt_text = models.CharField(max_length=160, blank=True)
     is_cover = models.BooleanField(default=False)
+
+    @property
+    def image_url(self):
+        if self.image:
+            return self.image.url
+        return self.external_url
+
+    def __str__(self):
+        return self.alt_text or f'Image for {self.gym.name}'
 
 
 class MembershipPlan(models.Model):

@@ -27,6 +27,11 @@ def admin_required(view_func):
     return wrapper
 
 
+def can_promote_admin(user):
+    # Only the real Django superuser can create another platform admin.
+    return user.is_authenticated and user.is_superuser
+
+
 def _base_metrics():
     today = timezone.now().date()
     return {
@@ -104,8 +109,19 @@ def change_user_role(request, user_id):
     if new_role not in valid_roles:
         messages.error(request, 'Invalid role selected.')
         return redirect('control_users')
+    if new_role == User.Role.ADMIN and not can_promote_admin(request.user):
+        messages.error(request, 'Only a Django superuser can promote another user to ADMIN.')
+        return redirect('control_users')
+    if user == request.user and new_role != User.Role.ADMIN and not request.user.is_superuser:
+        messages.error(request, 'You cannot remove your own admin role from here.')
+        return redirect('control_users')
+
     user.role = new_role
-    user.save(update_fields=['role'])
+    if new_role == User.Role.ADMIN:
+        user.is_staff = True
+    elif not user.is_superuser:
+        user.is_staff = False
+    user.save(update_fields=['role', 'is_staff'])
     log_event(level='WARNING', category='ADMIN', event='user_role_changed', message=f'{user.username} role changed to {new_role}', actor=request.user, request=request, related_model='User', related_id=user.id, metadata={'new_role': new_role})
     messages.success(request, f'{user.username} role changed to {new_role}.')
     return redirect('control_users')

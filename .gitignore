@@ -8,11 +8,3 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
-.env
-*.sqlite3
-db.sqlite3
-media/
-staticfiles/
-*.pyc
-__pycache__/
-logs/
