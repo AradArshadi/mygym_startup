@@ -10,19 +10,22 @@
         <h1 class="hero-title mb-4">Find the gym that fits your lifestyle.</h1>
         <p class="hero-copy mb-4">Compare gyms by price, facilities, trainers and vibe. Book trial visits without endless searching.</p>
         <form class="search-glass" method="get">
-          <div class="search-field"><span>⌕</span><input name="q" placeholder="Gym, trainer, facility" value="{{ query }}"></div>
-          <div class="search-field"><span>📍</span><input name="city" placeholder="City" value="{{ city }}"></div>
-          <div class="search-field"><span>€</span><input name="max_price" placeholder="Max price" value="{{ max_price }}"></div>
+          <div class="search-field"><span>⌕</span><input name="q" placeholder="Gym, facility, address" value="{{ query }}"></div>
+          <div class="search-field"><span>📍</span><input name="city" placeholder="City" value="{{ city }}" list="city-options"></div>
+          <div class="search-field"><span>€</span><input name="max_price" placeholder="Max price" value="{{ max_price }}" inputmode="decimal"></div>
           <input type="hidden" name="view" value="{{ view_mode }}">
           <button class="btn btn-primary search-btn">Search</button>
         </form>
+        <datalist id="city-options">
+          {% for option in city_options %}<option value="{{ option }}">{% endfor %}
+        </datalist>
       </div>
       <div class="col-lg-5">
         <div class="hero-orbit">
           <div class="floating-card main-stat">
             <span class="tiny-label">Live marketplace</span>
             <strong>{{ gyms|length }} gyms</strong>
-            <small>ready to explore</small>
+            <small>matching your filters</small>
           </div>
           <div class="floating-card mini one"><strong>24/7</strong><small>Discovery</small></div>
           <div class="floating-card mini two"><strong>★</strong><small>Reviews</small></div>
@@ -34,15 +37,84 @@
 </section>
 
 <section class="container py-5">
+  <form class="discovery-filter-card mb-4" method="get">
+    <input type="hidden" name="view" value="{{ view_mode }}">
+
+    <div class="filter-search-row">
+      <label class="filter-search-main" for="marketplace-search">
+        <span class="filter-icon">⌕</span>
+        <input id="marketplace-search" name="q" placeholder="Search gyms, facilities, address" value="{{ query }}">
+      </label>
+      <label class="filter-search-city" for="marketplace-city">
+        <span class="filter-icon">📍</span>
+        <input id="marketplace-city" name="city" placeholder="City" value="{{ city }}" list="city-options">
+      </label>
+      <label class="filter-search-price" for="marketplace-price">
+        <span class="filter-icon">€</span>
+        <input id="marketplace-price" name="max_price" placeholder="Max price" value="{{ max_price }}" inputmode="decimal">
+      </label>
+      <button class="btn btn-dark filter-primary-btn" type="submit">Search</button>
+    </div>
+
+    <div class="filter-tools-row">
+      <div class="quick-selects">
+        <label class="mini-select">
+          <span>Rating</span>
+          <select name="min_rating">
+            <option value="" {% if not min_rating %}selected{% endif %}>Any</option>
+            <option value="4.5" {% if min_rating == '4.5' %}selected{% endif %}>4.5+</option>
+            <option value="4" {% if min_rating == '4' %}selected{% endif %}>4+</option>
+            <option value="3" {% if min_rating == '3' %}selected{% endif %}>3+</option>
+          </select>
+        </label>
+        <label class="mini-select">
+          <span>Sort</span>
+          <select name="sort">
+            <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+            <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Highest rating</option>
+            <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Lowest price</option>
+            <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Highest price</option>
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>Name A–Z</option>
+          </select>
+        </label>
+      </div>
+
+      <details class="facility-dropdown" {% if selected_facilities %}open{% endif %}>
+        <summary>
+          <span>Facilities</span>
+          {% if selected_facilities %}<strong>{{ selected_facilities|length }}</strong>{% endif %}
+        </summary>
+        <div class="facility-menu">
+          {% for facility in facility_options %}
+            <label class="facility-pill-option">
+              <input type="checkbox" name="facilities" value="{{ facility.id }}" {% if facility.id|stringformat:'s' in selected_facilities %}checked{% endif %}>
+              <span>{{ facility.name }}</span>
+            </label>
+          {% empty %}
+            <span class="text-muted small">No facilities available yet.</span>
+          {% endfor %}
+        </div>
+      </details>
+
+      <div class="filter-actions">
+        {% if query or city or max_price or min_rating or selected_facilities %}
+          <a class="clear-filter-link" href="{% url 'gym_list' %}">Clear all</a>
+        {% endif %}
+        <button class="btn btn-primary filter-apply-btn" type="submit">Apply</button>
+      </div>
+    </div>
+  </form>
+
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
     <div>
       <p class="section-kicker">Explore</p>
       <h2 class="section-title mb-0">Available gyms</h2>
+      <p class="text-muted mb-0">{{ gyms|length }} result{{ gyms|length|pluralize }} found</p>
     </div>
     <div class="view-switch" role="group">
-      <a class="{% if view_mode == 'cards' %}active{% endif %}" href="?q={{ query }}&city={{ city }}&max_price={{ max_price }}&view=cards">Cards</a>
-      <a class="{% if view_mode == 'table' %}active{% endif %}" href="?q={{ query }}&city={{ city }}&max_price={{ max_price }}&view=table">Table</a>
-      <a class="{% if view_mode == 'map' %}active{% endif %}" href="?q={{ query }}&city={{ city }}&max_price={{ max_price }}&view=map">Map</a>
+      <a class="{% if view_mode == 'cards' %}active{% endif %}" href="?{{ filter_query_string }}&view=cards">Cards</a>
+      <a class="{% if view_mode == 'table' %}active{% endif %}" href="?{{ filter_query_string }}&view=table">Table</a>
+      <a class="{% if view_mode == 'map' %}active{% endif %}" href="?{{ filter_query_string }}&view=map">Map</a>
     </div>
   </div>
 
@@ -57,7 +129,7 @@
                 <td class="fw-bold">{{ gym.name }}</td>
                 <td>{{ gym.city }}</td>
                 <td>€{{ gym.starting_price }}</td>
-                <td>{{ gym.avg_rating|floatformat:1|default:'—' }}</td>
+                <td>{% if gym.avg_rating %}★ {{ gym.avg_rating|floatformat:1 }} <span class="text-muted small">({{ gym.review_count }})</span>{% else %}—{% endif %}</td>
                 <td>{% for f in gym.facilities.all %}<span class="chip me-1">{{ f.name }}</span>{% empty %}—{% endfor %}</td>
                 <td>{% if gym.latitude and gym.longitude %}<span class="status-pill status-confirmed">Pinned</span>{% else %}<span class="status-pill">No coords</span>{% endif %}</td>
                 <td>{% if user.is_authenticated %}<a class="btn btn-sm btn-primary rounded-pill" href="{% url 'gym_detail' gym.slug %}">View</a>{% else %}<a class="btn btn-sm btn-primary rounded-pill" href="{% url 'login' %}?next={% url 'gym_detail' gym.slug %}">Login to view</a>{% endif %}</td>
@@ -96,7 +168,10 @@
               <span class="price-chip">from €{{ gym.starting_price }}</span>
             </a>
             <div class="p-4">
-              <p class="mb-1 text-muted small">📍 {{ gym.city }}</p>
+              <div class="d-flex justify-content-between gap-2 mb-2">
+                <p class="mb-0 text-muted small">📍 {{ gym.city }}</p>
+                <p class="mb-0 rating-badge">{% if gym.avg_rating %}★ {{ gym.avg_rating|floatformat:1 }}{% else %}New{% endif %}</p>
+              </div>
               <h3 class="h4 fw-black mb-2">{{ gym.name }}</h3>
               <p class="text-muted mb-3">{{ gym.description|truncatewords:18 }}</p>
               <div class="mb-3">{% for f in gym.facilities.all %}<span class="chip me-1 mb-1">{{ f.name }}</span>{% endfor %}</div>
@@ -104,7 +179,7 @@
             </div>
           </article>
         </div>
-      {% empty %}<div class="col-12"><div class="empty-state">No gyms found. Try another search.</div></div>{% endfor %}
+      {% empty %}<div class="col-12"><div class="empty-state">No gyms found. Try another search or reset filters.</div></div>{% endfor %}
     </div>
   {% endif %}
 </section>

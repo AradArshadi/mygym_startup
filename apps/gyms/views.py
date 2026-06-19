@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Avg, Prefetch, Q
+from django.db.models import Avg, Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -28,21 +28,52 @@ def gym_list(request):
             'facilities',
             Prefetch('images', queryset=GymImage.objects.order_by('-is_cover', 'id'), to_attr='display_images'),
         )
-        .annotate(avg_rating=Avg('reviews__rating'))
+        .annotate(
+            avg_rating=Avg('reviews__rating', filter=Q(reviews__is_visible=True)),
+            review_count=Count('reviews', filter=Q(reviews__is_visible=True)),
+        )
     )
+
     query = request.GET.get('q', '').strip()
     city = request.GET.get('city', '').strip()
     max_price = request.GET.get('max_price', '').strip()
+    min_rating = request.GET.get('min_rating', '').strip()
+    selected_facilities = [fid for fid in request.GET.getlist('facilities') if fid.isdigit()]
+    sort = request.GET.get('sort', 'newest').strip()
 
     if query:
-        gyms = gyms.filter(Q(name__icontains=query) | Q(description__icontains=query) | Q(facilities__name__icontains=query)).distinct()
+        gyms = gyms.filter(
+            Q(name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(city__icontains=query)
+            | Q(address__icontains=query)
+            | Q(facilities__name__icontains=query)
+        ).distinct()
     if city:
-        gyms = gyms.filter(city__icontains=city)
+        gyms = gyms.filter(city__iexact=city)
+    if selected_facilities:
+        gyms = gyms.filter(facilities__id__in=selected_facilities).distinct()
     if max_price:
         try:
             gyms = gyms.filter(starting_price__lte=max_price)
         except ValueError:
             messages.warning(request, 'Max price must be a number.')
+    if min_rating:
+        try:
+            gyms = gyms.filter(avg_rating__gte=float(min_rating))
+        except ValueError:
+            messages.warning(request, 'Minimum rating must be a number.')
+
+    sort_options = {
+        'newest': '-created_at',
+        'rating': '-avg_rating',
+        'price_asc': 'starting_price',
+        'price_desc': '-starting_price',
+        'name': 'name',
+    }
+    if sort not in sort_options:
+        sort = 'newest'
+    gyms = gyms.order_by(sort_options[sort], 'name')
 
     if query or city:
         SearchLog.objects.create(user=request.user if request.user.is_authenticated else None, query=query, city=city)
@@ -50,6 +81,19 @@ def gym_list(request):
     view_mode = request.GET.get('view', 'cards')
     if view_mode not in ['cards', 'table', 'map']:
         view_mode = 'cards'
+
+    filter_params = request.GET.copy()
+    filter_params.pop('view', None)
+    filter_query_string = filter_params.urlencode()
+
+    facility_options = Gym.facilities.field.remote_field.model.objects.order_by('name')
+    city_options = (
+        Gym.objects.filter(status=Gym.Status.APPROVED)
+        .exclude(city='')
+        .order_by('city')
+        .values_list('city', flat=True)
+        .distinct()
+    )
 
     gym_list_items = list(gyms)
     map_gyms = []
@@ -70,6 +114,12 @@ def gym_list(request):
         'query': query,
         'city': city,
         'max_price': max_price,
+        'min_rating': min_rating,
+        'selected_facilities': selected_facilities,
+        'sort': sort,
+        'facility_options': facility_options,
+        'city_options': city_options,
+        'filter_query_string': filter_query_string,
         'view_mode': view_mode,
     })
 
