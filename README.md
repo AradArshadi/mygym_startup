@@ -1,254 +1,284 @@
+# myGym
 
-## v3 additions
+**The Operating System for Sports & Wellness**
 
-- Gym detail pages now include a Photos section, Reviews section, plans, trainers, and booking form.
-- Customers can submit one review per gym.
-- Owners receive in-app notifications for bookings and reviews.
-- Customers receive in-app notification after sending a booking request.
-- Owner dashboard shows customer names, emails, requested booking time, status, and notes per gym.
-- New notifications module: `/notifications/`.
+myGym is a Django-based marketplace platform that helps users discover, review, book, and manage fitness and wellness venues.
 
-After updating, run:
+The project started as a gym marketplace and is being designed to evolve into a broader ecosystem covering:
 
-```bash
-python manage.py makemigrations notifications reviews bookings gyms dashboard analytics accounts
-python manage.py migrate
-python manage.py runserver
-```
-
-## v0.8 UI/UX Bootstrap Refresh
-
-- Added Bootstrap 5 CDN integration.
-- Redesigned navbar, landing/explore page, gym cards, table view, map container, gym detail page, customer dashboard, owner dashboard, and auth pages.
-- Kept backend logic unchanged; no migration required for this UI-only upgrade.
-
-Run:
-
-```bash
-python manage.py check
-python manage.py runserver
-```
-
+* Gyms
+* Trainers
+* Tennis Coaches
+* Wellness Centers
+* Sports Facilities
+* Nutrition Services
+* Recovery Services
+* AI Coaching
+* Smart Gym Infrastructure
 
 ---
 
-Powered by Arad Arshadi  
-GitHub: https://github.com/AradArshadi
+## Vision
 
-## v0.9 Control Deck
+Our long-term goal is to build the central platform for discovering, booking, training, recovering, and staying motivated.
 
-The project now includes a custom admin/operator dashboard at `/control/`.
+myGym is not simply a gym finder.
 
-Access is limited to superusers, staff users, or users with role `ADMIN`.
+It aims to become:
 
-Control Deck features:
-- Platform overview metrics
-- User management and role changes
-- Gym approval/rejection workflow
-- Booking status controls
-- Review moderation
-- Links back to Django Admin for low-level database administration
+> The Operating System for Sports & Wellness.
 
-Django Admin remains available at `/admin/` as the technical back office.
+---
 
-## v0.9.1 Email System
+# Current Status
 
-This version adds a centralized email service layer under `apps/emails/`.
+Version: **v0.9.2.8.1**
 
-Email events currently supported:
-- Customer/owner/trainer welcome email after registration
-- Booking request email to gym owner / gym contact email
-- Booking status email to customer when accepted, rejected, cancelled, or updated by Control Deck
-- Gym approval/rejection email to owner
-- New review email to gym owner
+Current Phase:
 
-### Local development
+**Marketplace Foundation**
 
-By default emails are printed to the terminal:
+The platform already supports:
 
-```env
-EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-```
+* Gym discovery
+* User accounts
+* Owner accounts
+* Reviews & ratings
+* Bookings
+* Notifications
+* Analytics
+* Import pipelines
+* Control Deck administration
+* Gym photos
+* Search & filtering
 
-### SMTP deployment
+---
 
-For SMTP, set:
+# Features
 
-```env
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=your-email@example.com
-EMAIL_HOST_PASSWORD=your-app-password
-DEFAULT_FROM_EMAIL=myGym <your-email@example.com>
-SITE_URL=https://yourusername.pythonanywhere.com
-```
+## User Features
 
-### Test email
+* Register and login
+* Browse gyms
+* Search gyms
+* Filter gyms
+* View gym details
+* Submit reviews
+* Submit booking requests
+* Receive notifications
 
-```bash
-python manage.py test_email your-email@example.com
-```
+## Gym Owner Features
 
-No database migration is required for v0.9.1.
+* Manage owned gyms
+* Receive booking requests
+* Receive review notifications
+* View owner dashboard
 
-## v0.9.2 Logging & Observability
+## Admin Features
 
-This version adds a production debugging layer so silent failures are easier to detect.
+* Control Deck administration panel
+* User management
+* Gym moderation
+* Review moderation
+* Booking oversight
+* Import management
+* Platform analytics
+* System logs
 
-Added:
-- `apps/systemlogs` app
-- `SystemLog` database model
-- `/control/logs/` Control Deck page
-- File logs in `logs/mygym.log` and `logs/emails.log`
-- Email diagnostics for every send attempt, success, skip, and failure
-- Request/error logging middleware
-- `show_email_config` command for sanitized email configuration checks
+---
 
-After updating, run:
+# Import Pipeline
 
-```bash
-python manage.py migrate
-python manage.py check
-python manage.py show_email_config
-python manage.py test_email your-email@example.com
-```
+Real gym data can be imported using Geoapify.
 
-Important deployment notes:
-- The `logs/` directory is intentionally ignored by Git.
-- Email credentials must stay inside `.env` and must never be committed.
-- Use `/control/logs/` to inspect email failures and admin/business events.
+Features:
 
-Useful commands:
+* Import batching
+* Duplicate protection
+* Source tracking
+* Safe deletion
+* Review workflow
+
+Management commands:
 
 ```bash
-tail -n 80 logs/emails.log
-tail -n 80 logs/mygym.log
-```
-
-## v0.9.2.2 — Real Gym Import Pipeline
-
-This version replaces fake seed data with a safer import workflow for real public data.
-
-### What changed
-
-- Added `ImportBatch` model to group imported data.
-- Added import tracking fields on `Gym`:
-  - `is_imported`
-  - `is_claimed`
-  - `source`
-  - `external_id`
-  - `import_batch`
-  - `imported_at`
-- Added OpenStreetMap/Overpass import command.
-- Added safe wipe commands so imported data can be removed without touching owner-created gyms.
-
-### Run migrations
-
-```bash
-python manage.py makemigrations gyms
-python manage.py migrate
-```
-
-### Import gyms from OpenStreetMap
-
-```bash
-python manage.py import_gyms_osm --city "Tabriz" --country "Iran"
-```
-
-Import as approved immediately:
-
-```bash
-python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --approve
-```
-
-Dry run:
-
-```bash
-python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --dry-run
-```
-
-Limit records:
-
-```bash
-python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --limit 25
-```
-
-### List import batches
-
-```bash
+python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran" --radius-km 25 --limit 15
 python manage.py list_import_batches
-```
-
-### Wipe one import batch
-
-```bash
 python manage.py wipe_import_batch 1
 ```
 
-If some imported gyms have bookings/reviews/favorites, they are protected by default. To delete them anyway:
+---
 
-```bash
-python manage.py wipe_import_batch 1 --force
+# Tech Stack
+
+## Backend
+
+* Django 5.x
+* Python 3.x
+
+## Frontend
+
+* Bootstrap 5
+* Custom CSS
+* Leaflet Maps
+* OpenStreetMap
+
+## Database
+
+Current:
+
+* SQLite
+
+In Progress:
+
+* MySQL Migration
+
+Future:
+
+* PostgreSQL Production Deployment
+
+## Deployment
+
+* PythonAnywhere
+* Cloudflare (planned)
+
+---
+
+# Project Structure
+
+```text
+apps/
+├── accounts
+├── gyms
+├── bookings
+├── reviews
+├── notifications
+├── analytics
+├── dashboard
+├── emails
+├── controlpanel
+└── systemlogs
 ```
 
-### Wipe imported gyms by city
+---
+
+# Installation
 
 ```bash
-python manage.py wipe_imported_gyms --city "Tabriz"
+git clone https://github.com/AradArshadi/mygym.git
+
+cd mygym
+
+python -m venv .venv
+
+source .venv/bin/activate
+
+pip install -r requirements.txt
+
+python manage.py migrate
+
+python manage.py runserver
 ```
 
-This never deletes owner-created gyms or claimed gyms.
+---
 
-## v0.9.2.4 security/import hotfix notes
+# Environment Variables
 
-### Emergency rollback for accidentally approved imports
+Example:
 
-If a Geoapify batch was imported as approved, move it back to review/pending:
+```env
+SECRET_KEY=your-secret-key
+
+DEBUG=True
+
+DATABASE_ENGINE=sqlite
+
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+```
+
+---
+
+# Useful Commands
+
+Import gyms:
 
 ```bash
-python manage.py mark_import_batch_pending 3
+python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran"
 ```
 
-### Safer Geoapify importing
-
-`--approve` is now ignored unless it is deliberately combined with `--allow-auto-approve`.
-Default imported gyms stay `PENDING` for Control Deck review.
+Generate placeholder photos:
 
 ```bash
-python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran" --radius-km 25 --limit 100
+python manage.py generate_gym_placeholder_photos --replace
 ```
 
-Unsafe demo-only auto approval:
+Seed demo users:
 
 ```bash
-python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran" --radius-km 25 --approve --allow-auto-approve
+python manage.py seed_demo_users --customers 15 --owners 3
 ```
 
-### Public signup role security
-
-The public register page now only allows:
-
-- Customer
-- Gym Owner
-
-Admin accounts cannot be created from public signup. Admin promotion is handled from the Control Deck, and promotion to `ADMIN` is restricted to Django superusers.
-
-### Test data reset trigger
-
-Delete imported, unclaimed test gyms safely:
+Seed reviews:
 
 ```bash
-python manage.py wipe_test_data --source geoapify --city Tabriz --yes --delete-empty-batches
+python manage.py seed_demo_reviews --reviews 40
 ```
 
-Full demo/test cleanup, still protecting superusers and claimed gyms:
+Clean demo data:
 
 ```bash
-python manage.py wipe_test_data --yes --include-demo-users --delete-empty-batches
+python manage.py wipe_demo_data --yes
 ```
 
-### Gym photos
+---
 
-Owner-uploaded gym photos are already supported through gym management. Geoapify Places does not reliably provide gym photos, so imported gyms still use the current placeholder unless photos are uploaded later by an owner/admin.
+# Roadmap
+
+## Marketplace Foundation
+
+* Gym discovery
+* Reviews
+* Bookings
+* Notifications
+* Analytics
+
+## Upcoming
+
+* Gym claim workflow
+* Advanced owner dashboard
+* MySQL migration
+* Cloud deployment
+* Production hardening
+
+## Future Vision
+
+* AI coaching
+* Wellness marketplace
+* Smart gym integrations
+* Wearables
+* Nutrition services
+* Gamification
+
+---
+
+# Versioning
+
+The project intentionally remains below v1.0.
+
+Rules:
+
+* Major feature: 0.9.2.8 → 0.9.2.9
+* Minor update: 0.9.2.8 → 0.9.2.8.1
+* v1.0.0 only when production-ready
+
+---
+
+# Founder
+
+**Arad Arshadi**
+
+GitHub:
+https://github.com/AradArshadi
+
+LinkedIn:
+https://linkedin.com/in/arad-arshadi
