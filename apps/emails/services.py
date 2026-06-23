@@ -154,3 +154,29 @@ def send_review_notice_to_owner(review, *, actor=None, request=None):
         related_model='Review',
         related_id=review.id,
     )
+
+
+def send_session_qr_to_customer(session, qr_url, qr_data_uri='', *, actor=None, request=None):
+    return send_app_email(
+        session.customer.email,
+        f'Your myGym session QR for {session.gym.name}',
+        'session_qr_customer',
+        {'session': session, 'gym': session.gym, 'customer': session.customer, 'qr_url': qr_url, 'qr_data_uri': qr_data_uri},
+        actor=actor,
+        request=request,
+        related_model='Session',
+        related_id=session.id,
+    )
+
+
+def send_membership_access_pass_to_customer(subscription, qr_url, qr_data_uri='', *, actor=None, request=None):
+    return send_app_email(
+        subscription.customer.email,
+        f'Your myGym Access Pass for {subscription.gym.name}',
+        'membership_access_pass_customer',
+        {'subscription': subscription, 'gym': subscription.gym, 'customer': subscription.customer, 'qr_url': qr_url, 'qr_data_uri': qr_data_uri},
+        actor=actor,
+        request=request,
+        related_model='GymSubscription',
+        related_id=subscription.id,
+    )

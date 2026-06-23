@@ -83,7 +83,7 @@
         <p class="text-muted">Send a booking request to the gym owner.</p>
         {% if user.is_authenticated %}
           <form method="post" action="{% url 'create_booking' gym.id %}" class="vstack gap-3">
-            {% csrf_token %}<input class="form-control" type="datetime-local" name="booking_datetime" required><textarea class="form-control" name="customer_note" placeholder="Optional note for the gym owner"></textarea><button class="btn btn-primary rounded-pill">Send booking request</button>
+            {% csrf_token %}<input class="form-control" type="datetime-local" name="booking_datetime" required><select class="form-select" name="plan"><option value="">One-time / trial visit</option>{% for plan in gym.plans.all %}<option value="{{ plan.id }}">{{ plan.title }} · €{{ plan.price }} · {{ plan.duration_days }} day(s)</option>{% endfor %}</select><textarea class="form-control" name="customer_note" placeholder="Optional note for the gym owner"></textarea><button class="btn btn-primary rounded-pill">Send booking request</button>
           </form>
         {% else %}<a class="btn btn-primary rounded-pill w-100" href="{% url 'login' %}">Login to book</a>{% endif %}
       </section>

@@ -3,19 +3,44 @@
 {% block content %}
 <section class="dashboard-hero py-5 text-white">
   <div class="container d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
-    <div><p class="section-kicker text-white-50">Owner Workspace</p><h1 class="display-5 fw-black">Owner Dashboard</h1><p class="lead text-white-75">Manage gyms, booking requests, analytics, photos, trainers, and plans.</p></div>
+    <div><p class="section-kicker text-white-50">Owner Workspace</p><h1 class="display-5 fw-black">Owner Dashboard</h1><p class="lead text-white-75">Manage gyms, booking requests, sessions, QR check-ins, analytics, photos, trainers, and plans.</p></div>
     <a class="btn btn-primary btn-lg rounded-pill" href="{% url 'owner_gym_create' %}">+ Add Gym</a>
   </div>
 </section>
 <div class="container py-5">
-  <div class="row g-4 mb-4"><div class="col-md-6"><div class="stat-card"><strong>{{ total_pending }}</strong><span>Pending bookings</span></div></div><div class="col-md-6"><div class="stat-card"><strong>{{ total_confirmed }}</strong><span>Confirmed bookings</span></div></div></div>
+  <div class="row g-4 mb-4">
+    <div class="col-md-3"><div class="stat-card"><strong>{{ total_pending }}</strong><span>Pending bookings</span></div></div>
+    <div class="col-md-3"><div class="stat-card"><strong>{{ total_confirmed }}</strong><span>Confirmed bookings</span></div></div>
+    <div class="col-md-3"><div class="stat-card"><strong>{{ active_memberships }}</strong><span>Active members</span></div></div>
+    <div class="col-md-3"><div class="stat-card"><strong>{{ todays_checkins|length }}</strong><span>Today's check-ins</span></div></div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <article class="card border-0 shadow-sm rounded-5 p-4 h-100">
+        <h2 class="h4 fw-bold mb-3">Today's sessions</h2>
+        {% for session in todays_sessions %}
+          <div class="list-row"><div><strong>{{ session.customer.get_full_name|default:session.customer.username }}</strong><p>{{ session.gym.name }} · {{ session.start_time|date:'H:i' }} · <span class="status-pill status-{{ session.status|lower }}">{{ session.get_status_display }}</span></p></div></div>
+        {% empty %}<div class="empty-state">No sessions scheduled today.</div>{% endfor %}
+      </article>
+    </div>
+    <div class="col-lg-6">
+      <article class="card border-0 shadow-sm rounded-5 p-4 h-100">
+        <h2 class="h4 fw-bold mb-3">Recent check-ins</h2>
+        {% for checkin in todays_checkins %}
+          <div class="list-row"><div><strong>{{ checkin.customer.get_full_name|default:checkin.customer.username }}</strong><p>{{ checkin.gym.name }} · {{ checkin.get_checkin_type_display }} · {{ checkin.checked_in_at|date:'H:i' }}</p></div></div>
+        {% empty %}<div class="empty-state">No check-ins today. Scan a one-time QR or Access Pass QR to validate entry.</div>{% endfor %}
+      </article>
+    </div>
+  </div>
+
   <div class="vstack gap-4">
   {% for gym in gyms %}
     <article class="card border-0 shadow-sm rounded-5 p-4">
       <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3"><div><h2 class="fw-bold mb-1">{{ gym.name }}</h2><p class="text-muted mb-0">Status: <span class="badge rounded-pill text-bg-light border">{{ gym.get_status_display }}</span></p></div><div class="d-flex gap-2 flex-wrap"><a class="btn btn-primary rounded-pill" href="{% url 'owner_gym_manage' gym.slug %}">Manage gym</a><a class="btn btn-outline-dark rounded-pill" href="{% url 'owner_gym_edit' gym.slug %}">Edit info</a></div></div>
       <div class="row g-3 mb-4"><div class="col-6 col-md"><div class="mini-stat">Views <strong>{{ gym.total_views }}</strong></div></div><div class="col-6 col-md"><div class="mini-stat">Bookings <strong>{{ gym.total_bookings }}</strong></div></div><div class="col-6 col-md"><div class="mini-stat">Pending <strong>{{ gym.pending_bookings }}</strong></div></div><div class="col-6 col-md"><div class="mini-stat">Favorites <strong>{{ gym.total_favorites }}</strong></div></div><div class="col-6 col-md"><div class="mini-stat">Rating <strong>{{ gym.avg_rating|default:'—' }}</strong></div></div></div>
       <h3 class="h5 fw-bold">People asking for booking</h3>
-      <div class="table-responsive"><table class="table align-middle"><thead class="table-light"><tr><th>Customer</th><th>Email</th><th>Date / Time</th><th>Status</th><th>Note</th><th>Actions</th></tr></thead><tbody>{% for booking in gym.recent_bookings %}<tr><td class="fw-semibold">{{ booking.customer.get_full_name|default:booking.customer.username }}</td><td>{{ booking.customer.email|default:'—' }}</td><td>{{ booking.booking_datetime|date:'d M Y H:i' }}</td><td><span class="status-pill status-{{ booking.status|lower }}">{{ booking.status }}</span></td><td>{{ booking.customer_note|default:'—' }}</td><td>{% if booking.status == 'PENDING' %}<form action="{% url 'update_booking_status' booking.id 'confirm' %}" method="post" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-success rounded-pill" type="submit">Accept</button></form> <form action="{% url 'update_booking_status' booking.id 'reject' %}" method="post" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger rounded-pill" type="submit">Reject</button></form>{% elif booking.status == 'CONFIRMED' %}<form action="{% url 'update_booking_status' booking.id 'cancel' %}" method="post" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary rounded-pill" type="submit">Cancel</button></form>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No booking requests yet.</td></tr>{% endfor %}</tbody></table></div>
+      <div class="table-responsive"><table class="table align-middle"><thead class="table-light"><tr><th>Customer</th><th>Email</th><th>Date / Time</th><th>Plan</th><th>Status</th><th>Note</th><th>Actions</th></tr></thead><tbody>{% for booking in gym.recent_bookings %}<tr><td class="fw-semibold">{{ booking.customer.get_full_name|default:booking.customer.username }}</td><td>{{ booking.customer.email|default:'—' }}</td><td>{{ booking.booking_datetime|date:'d M Y H:i' }}</td><td>{{ booking.plan.title|default:'One-time / trial' }}</td><td><span class="status-pill status-{{ booking.status|lower }}">{{ booking.status }}</span></td><td>{{ booking.customer_note|default:'—' }}</td><td>{% if booking.status == 'PENDING' %}<form action="{% url 'update_booking_status' booking.id 'confirm' %}" method="post" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-success rounded-pill" type="submit">Accept</button></form> <form action="{% url 'update_booking_status' booking.id 'reject' %}" method="post" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-danger rounded-pill" type="submit">Reject</button></form>{% elif booking.status == 'CONFIRMED' %}<form action="{% url 'update_booking_status' booking.id 'cancel' %}" method="post" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary rounded-pill" type="submit">Cancel</button></form>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No booking requests yet.</td></tr>{% endfor %}</tbody></table></div>
     </article>
   {% empty %}<article class="card border-0 shadow-sm rounded-5 p-5 text-center"><h2>No gyms yet</h2><p class="text-muted">Create your first gym profile and submit it for admin approval.</p><a class="btn btn-primary rounded-pill" href="{% url 'owner_gym_create' %}">Add your first gym</a></article>{% endfor %}
   </div>

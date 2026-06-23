@@ -2,6 +2,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect, render
 
 from .models import User
@@ -42,6 +43,21 @@ class RegisterForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class MyGymLoginView(LoginView):
+    template_name = 'accounts/login.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        try:
+            from apps.bookings.views import _refresh_due_membership_qrs_for_user
+            refreshed = _refresh_due_membership_qrs_for_user(self.request.user)
+            if refreshed:
+                messages.info(self.request, f'{refreshed} Access Pass QR code(s) refreshed.')
+        except Exception:
+            pass
+        return response
 
 
 def register(request):

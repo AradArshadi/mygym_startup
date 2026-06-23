@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}QR Validation · myGym{% endblock %}
+{% block content %}
+<section class="dashboard-hero py-5 text-white">
+  <div class="container"><p class="section-kicker text-white-50">Owner validation</p><h1 class="display-5 fw-black">QR Check-in</h1><p class="lead text-white-75">Validate customer entry before confirming check-in.</p></div>
+</section>
+<div class="container py-5">
+  <article class="card border-0 shadow-sm rounded-5 p-4 mx-auto" style="max-width:760px;">
+    {% if valid %}
+      <div class="alert alert-success rounded-4">Valid {{ mode|lower }} QR. Please confirm entry.</div>
+    {% else %}
+      <div class="alert alert-danger rounded-4">{{ reason|default:'This QR code is not valid.' }}</div>
+    {% endif %}
+
+    {% if mode == 'SESSION' and session %}
+      <h2 class="h4 fw-bold">{{ session.gym.name }}</h2>
+      <p><strong>Customer:</strong> {{ session.customer.get_full_name|default:session.customer.username }}</p>
+      <p><strong>Type:</strong> One-time session</p>
+      <p><strong>Time:</strong> {{ session.start_time|date:'d M Y, H:i' }}</p>
+      <p><strong>Status:</strong> {{ session.get_status_display }}</p>
+    {% elif mode == 'MEMBERSHIP' and subscription %}
+      <h2 class="h4 fw-bold">{{ subscription.gym.name }}</h2>
+      <p><strong>Customer:</strong> {{ subscription.customer.get_full_name|default:subscription.customer.username }}</p>
+      <p><strong>Type:</strong> Membership Access Pass</p>
+      {% if subscription.plan %}<p><strong>Plan:</strong> {{ subscription.plan.title }}</p>{% endif %}
+      <p><strong>Valid until:</strong> {{ subscription.end_date|date:'d M Y' }}</p>
+      <p><strong>QR generated:</strong> {{ subscription.qr_generated_at|date:'d M Y, H:i' }}</p>
+    {% endif %}
+
+    <div class="d-flex gap-2 flex-wrap mt-4">
+      {% if valid %}<form method="post">{% csrf_token %}<button class="btn btn-success rounded-pill">Confirm Check-in</button></form>{% endif %}
+      <a class="btn btn-outline-dark rounded-pill" href="{% url 'owner_dashboard' %}">Back to owner dashboard</a>
+    </div>
+  </article>
+</div>
+{% endblock %}

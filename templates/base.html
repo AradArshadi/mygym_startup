@@ -31,6 +31,8 @@
             <li class="nav-item"><a class="btn btn-primary rounded-pill px-4 w-100 w-lg-auto" href="{% url 'owner_gym_create' %}">Add Gym</a></li>
           {% else %}
             <li class="nav-item"><a class="nav-link" href="{% url 'customer_dashboard' %}">My Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'my_sessions' %}">Sessions</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'my_memberships' %}">Access Pass</a></li>
           {% endif %}
           <li class="nav-item">
             <form action="{% url 'logout' %}" method="post" class="d-inline">

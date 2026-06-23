@@ -2,3 +2,4 @@ Django>=5.0,<6.0
 python-decouple>=3.8
 Pillow>=10.0
 mysqlclient>=2.2
+qrcode>=7.4

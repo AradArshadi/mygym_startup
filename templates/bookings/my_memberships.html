@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}My Access Passes · myGym{% endblock %}
+{% block content %}
+<section class="dashboard-hero py-5 text-white">
+  <div class="container d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+    <div><p class="section-kicker text-white-50">Membership access</p><h1 class="display-5 fw-black">My Access Passes</h1><p class="lead text-white-75">Your active gym subscription QR passes. Membership QR refreshes every 24 hours.</p></div>
+    <a class="btn btn-light rounded-pill px-4" href="{% url 'my_sessions' %}">My Sessions</a>
+  </div>
+</section>
+<div class="container py-5">
+  <div class="row g-4">
+    {% for subscription in active_subscriptions %}
+      <div class="col-lg-6">
+        <article class="card border-0 shadow-sm rounded-5 p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div><p class="section-kicker mb-1">Digital Access Pass</p><h2 class="h4 fw-bold mb-1">{{ subscription.gym.name }}</h2><p class="text-muted mb-0">Valid until {{ subscription.end_date|date:'d M Y' }}</p></div>
+            <span class="badge rounded-pill text-bg-success">Active</span>
+          </div>
+          {% if subscription.plan %}<p><strong>Plan:</strong> {{ subscription.plan.title }}</p>{% endif %}
+          <div class="text-center my-3">
+            {% if subscription.qr_data_uri %}<img src="{{ subscription.qr_data_uri }}" alt="Access Pass QR" class="img-fluid rounded-4 border p-3" style="max-width:240px;">{% endif %}
+            <p class="small text-muted mt-2 mb-0">Generated {{ subscription.qr_generated_at|date:'d M Y, H:i' }}</p>
+          </div>
+          <div class="d-flex gap-2 flex-wrap justify-content-center">
+            <a class="btn btn-primary rounded-pill" href="{{ subscription.qr_url }}">Open QR link</a>
+            <form method="post" action="{% url 'refresh_membership_qr' subscription.id %}">{% csrf_token %}<button class="btn btn-outline-dark rounded-pill">Refresh now</button></form>
+          </div>
+        </article>
+      </div>
+    {% empty %}
+      <div class="col-12"><div class="empty-state">No active Access Pass yet. Choose a membership plan and wait for owner confirmation.</div></div>
+    {% endfor %}
+  </div>
+
+  <article class="card border-0 shadow-sm rounded-5 p-4 mt-4">
+    <h2 class="h4 fw-bold mb-3">Expired / cancelled passes</h2>
+    {% for subscription in closed_subscriptions %}
+      <div class="list-row"><div><strong>{{ subscription.gym.name }}</strong><p>{{ subscription.get_status_display }} · ended {{ subscription.end_date|date:'d M Y' }}</p></div><a class="btn btn-sm btn-light rounded-pill" href="{% url 'gym_detail' subscription.gym.slug %}">Open gym</a></div>
+    {% empty %}<p class="text-muted mb-0">No expired or cancelled passes.</p>{% endfor %}
+  </article>
+</div>
+{% endblock %}
