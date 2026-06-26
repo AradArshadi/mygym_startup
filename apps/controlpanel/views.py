@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Count, Avg, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -9,10 +10,22 @@ from django.views.decorators.http import require_POST
 
 from apps.analytics.models import GymView
 from apps.bookings.models import Booking
+from apps.bookings.services import (
+    attach_membership_qr,
+    attach_session_qr,
+    cancel_operational_records_for_booking,
+    create_operational_records_for_confirmed_booking,
+)
 from apps.gyms.models import Gym
 from apps.notifications.models import Notification
 from apps.reviews.models import Review
-from apps.emails.services import send_gym_status_to_owner, send_booking_status_to_customer
+from apps.emails.services import (
+    send_booking_status_to_customer,
+    send_gym_status_to_owner,
+    send_membership_access_pass_to_customer,
+    send_session_qr_to_customer,
+)
+from apps.notifications.services import create_notification_safely
 from apps.systemlogs.services import log_event
 
 User = get_user_model()
@@ -184,7 +197,10 @@ def control_bookings(request):
 @require_POST
 @admin_required
 def update_booking_status(request, booking_id, action):
-    booking = get_object_or_404(Booking.objects.select_related('customer', 'gym'), id=booking_id)
+    booking = get_object_or_404(
+        Booking.objects.select_related('customer', 'gym', 'gym__owner', 'plan'),
+        id=booking_id,
+    )
     mapping = {
         'confirm': Booking.Status.CONFIRMED,
         'reject': Booking.Status.REJECTED,
@@ -194,11 +210,59 @@ def update_booking_status(request, booking_id, action):
     if action not in mapping:
         messages.error(request, 'Invalid booking action.')
         return redirect('control_bookings')
-    booking.status = mapping[action]
-    booking.save(update_fields=['status'])
-    Notification.objects.create(recipient=booking.customer, sender=request.user, kind=Notification.Kind.BOOKING, title=f'Booking {booking.status.lower()}', message=f'Your booking at {booking.gym.name} is now {booking.status.lower()}.', url='/dashboard/customer/')
-    send_booking_status_to_customer(booking, booking.status.lower(), actor=request.user, request=request)
-    log_event(level='INFO', category='BOOKING', event='booking_status_updated_by_admin', message=f'Admin changed booking {booking.id} to {booking.status}', actor=request.user, request=request, related_model='Booking', related_id=booking.id, metadata={'status': booking.status})
+
+    new_status = mapping[action]
+    with transaction.atomic():
+        old_status = booking.status
+        booking.status = new_status
+        booking.save(update_fields=['status'])
+
+        session = None
+        subscription = None
+        if new_status == Booking.Status.CONFIRMED:
+            session, subscription = create_operational_records_for_confirmed_booking(
+                booking,
+                actor=request.user,
+                request=request,
+            )
+        elif new_status in {Booking.Status.CANCELLED, Booking.Status.REJECTED}:
+            cancel_operational_records_for_booking(
+                booking,
+                actor=request.user,
+                request=request,
+                reason='Closed by platform admin.',
+            )
+
+    action_text = new_status.lower()
+    create_notification_safely(
+        request=request,
+        recipient=booking.customer,
+        sender=request.user,
+        kind=Notification.Kind.BOOKING,
+        title=f'Booking {action_text}',
+        message=f'Your booking at {booking.gym.name} is now {action_text}.',
+        url='/bookings/sessions/' if new_status == Booking.Status.CONFIRMED else '/dashboard/customer/',
+    )
+
+    send_booking_status_to_customer(booking, action_text, actor=request.user, request=request)
+    if new_status == Booking.Status.CONFIRMED and session:
+        attach_session_qr(request, session)
+        send_session_qr_to_customer(session, session.qr_url, session.qr_data_uri, actor=request.user, request=request)
+        if subscription:
+            attach_membership_qr(request, subscription)
+            send_membership_access_pass_to_customer(subscription, subscription.qr_url, subscription.qr_data_uri, actor=request.user, request=request)
+
+    log_event(
+        level='INFO',
+        category='BOOKING',
+        event='booking_status_updated_by_admin',
+        message=f'Admin changed booking {booking.id} from {old_status} to {new_status}',
+        actor=request.user,
+        request=request,
+        related_model='Booking',
+        related_id=booking.id,
+        metadata={'old_status': old_status, 'new_status': new_status},
+    )
     messages.success(request, f'Booking updated to {booking.status}.')
     return redirect(request.POST.get('next') or 'control_bookings')
 

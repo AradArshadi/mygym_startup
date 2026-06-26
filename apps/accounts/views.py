@@ -51,12 +51,20 @@ class MyGymLoginView(LoginView):
     def form_valid(self, form):
         response = super().form_valid(form)
         try:
-            from apps.bookings.views import _refresh_due_membership_qrs_for_user
-            refreshed = _refresh_due_membership_qrs_for_user(self.request.user)
+            from apps.bookings.services import refresh_due_membership_qrs_for_user
+            refreshed = refresh_due_membership_qrs_for_user(self.request.user)
             if refreshed:
                 messages.info(self.request, f'{refreshed} Access Pass QR code(s) refreshed.')
-        except Exception:
-            pass
+        except Exception as exc:
+            log_event(
+                level='ERROR',
+                category='SUBSCRIPTION',
+                event='membership_qr_refresh_failed_on_login',
+                message=f'Could not refresh Access Pass QR codes on login: {exc}',
+                actor=self.request.user,
+                request=self.request,
+                exc_info=True,
+            )
         return response
 
 

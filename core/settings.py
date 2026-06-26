@@ -1,11 +1,30 @@
+import sys
 from pathlib import Path
+
 from decouple import config, Csv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='dev-secret-key-change-me')
-DEBUG = config('DEBUG', default=True, cast=bool)
+RUNNING_TESTS = any(arg == 'test' for arg in sys.argv)
+
+ENVIRONMENT = config('ENVIRONMENT', default='development')
+IS_PRODUCTION = ENVIRONMENT.lower() in {'production', 'prod'}
+
+SECRET_KEY = config('SECRET_KEY', default='')
+if not SECRET_KEY:
+    if IS_PRODUCTION:
+        raise ImproperlyConfigured('SECRET_KEY must be set when ENVIRONMENT=production.')
+    SECRET_KEY = 'dev-secret-key-change-me'
+elif IS_PRODUCTION and SECRET_KEY == 'dev-secret-key-change-me':
+    raise ImproperlyConfigured('Production cannot use the development SECRET_KEY fallback.')
+
+DEBUG = config('DEBUG', default=not IS_PRODUCTION, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+if IS_PRODUCTION and not DEBUG:
+    local_only_hosts = {'127.0.0.1', 'localhost', ''}
+    if not ALLOWED_HOSTS or set(ALLOWED_HOSTS).issubset(local_only_hosts):
+        raise ImproperlyConfigured('Production ALLOWED_HOSTS must include the deployed domain.')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,6 +47,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -58,7 +78,23 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 DB_ENGINE = config('DB_ENGINE', default='sqlite')
-if DB_ENGINE == 'mysql':
+USE_SQLITE_FOR_TESTS = config('USE_SQLITE_FOR_TESTS', default=True, cast=bool)
+
+# Tests should be isolated from the developer/production database.
+# By default, `python manage.py test ...` uses an in-memory SQLite database, even if
+# the application itself is configured for MySQL. This prevents broken or leftover
+# MySQL test schemas from causing migration errors such as
+# "Table 'gyms_importbatch' already exists".
+# Set USE_SQLITE_FOR_TESTS=False only when you intentionally want to run the
+# suite against MySQL and you have a clean test database.
+if RUNNING_TESTS and USE_SQLITE_FOR_TESTS:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+elif DB_ENGINE == 'mysql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -67,6 +103,9 @@ if DB_ENGINE == 'mysql':
             'PASSWORD': config('DB_PASSWORD'),
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='3306'),
+            'TEST': {
+                'NAME': config('TEST_DB_NAME', default='test_' + config('DB_NAME')),
+            },
         }
     }
 else:
@@ -94,6 +133,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage' if IS_PRODUCTION else 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -103,13 +150,34 @@ EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.conso
 EMAIL_HOST = config('EMAIL_HOST', default='')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=20, cast=int)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='myGym <noreply@mygym.local>')
+SERVER_EMAIL = config('SERVER_EMAIL', default=DEFAULT_FROM_EMAIL)
 SUPPORT_EMAIL = config('SUPPORT_EMAIL', default=DEFAULT_FROM_EMAIL)
-SITE_URL = config('SITE_URL', default='')
+SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
+
+if RUNNING_TESTS:
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+
 LOGIN_REDIRECT_URL = 'gym_list'
 LOGOUT_REDIRECT_URL = 'gym_list'
+
+# Production security switches. Defaults remain local-dev friendly unless ENVIRONMENT=production.
+USE_X_FORWARDED_HOST = config('USE_X_FORWARDED_HOST', default=IS_PRODUCTION, cast=bool)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if config('SECURE_PROXY_SSL_HEADER_ENABLED', default=IS_PRODUCTION, cast=bool) else None
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=IS_PRODUCTION, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=IS_PRODUCTION, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=IS_PRODUCTION, cast=bool)
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000 if IS_PRODUCTION else 0, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=IS_PRODUCTION, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=IS_PRODUCTION, cast=bool)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+CSRF_TRUSTED_ORIGINS = [origin for origin in config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv()) if origin]
 
 
 # Logging / observability

@@ -5,6 +5,8 @@ from django.shortcuts import get_object_or_404, redirect
 from apps.gyms.models import Gym
 from .models import Review
 from apps.emails.services import send_review_notice_to_owner
+from apps.notifications.models import Notification
+from apps.notifications.services import create_notification_safely
 from apps.systemlogs.services import log_event
 
 
@@ -37,18 +39,15 @@ def create_review(request, gym_id):
         messages.error(request, 'You already reviewed this gym.')
         return redirect('gym_detail', slug=gym.slug)
 
-    try:
-        from apps.notifications.models import Notification
-        Notification.objects.create(
-            recipient=gym.owner,
-            sender=request.user,
-            kind=Notification.Kind.REVIEW,
-            title=f'New review for {gym.name}',
-            message=f'{request.user.username} left a {rating}/5 review.',
-            url=f'/gyms/{gym.slug}/',
-        )
-    except Exception:
-        pass
+    create_notification_safely(
+        request=request,
+        recipient=gym.owner,
+        sender=request.user,
+        kind=Notification.Kind.REVIEW,
+        title=f'New review for {gym.name}',
+        message=f'{request.user.username} left a {rating}/5 review.',
+        url=f'/gyms/{gym.slug}/',
+    )
 
     send_review_notice_to_owner(review, actor=request.user, request=request)
     log_event(level='INFO', category='REVIEW', event='review_created', message=f'{request.user.username} reviewed {gym.name}', actor=request.user, request=request, related_model='Review', related_id=review.id, metadata={'rating': rating})

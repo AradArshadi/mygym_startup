@@ -16,6 +16,10 @@ class SystemLog(models.Model):
         GYM = 'GYM', 'Gym'
         REVIEW = 'REVIEW', 'Review'
         ADMIN = 'ADMIN', 'Admin'
+        NOTIFICATION = 'NOTIFICATION', 'Notification'
+        SESSION = 'SESSION', 'Session'
+        SUBSCRIPTION = 'SUBSCRIPTION', 'Subscription'
+        CHECKIN = 'CHECKIN', 'Check-in'
         SYSTEM = 'SYSTEM', 'System'
 
     level = models.CharField(max_length=20, choices=Level.choices, default=Level.INFO)

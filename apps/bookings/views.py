@@ -1,13 +1,8 @@
-from datetime import timedelta
-
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
 
 from apps.emails.services import (
     send_booking_created_to_owner,
@@ -16,102 +11,62 @@ from apps.emails.services import (
     send_session_qr_to_customer,
 )
 from apps.gyms.models import Gym, MembershipPlan
+from apps.notifications.models import Notification
+from apps.notifications.services import create_notification_safely
 from apps.systemlogs.services import log_event
 
 from .models import Booking, GymCheckIn, GymSubscription, Session
-from .qr_utils import build_qr_data_uri
+from .services import (
+    absolute_url,
+    attach_membership_qr,
+    attach_session_qr,
+    cancel_operational_records_for_booking,
+    create_operational_records_for_confirmed_booking,
+    membership_checkin_url,
+    normalize_booking_datetime,
+    refresh_due_membership_qrs_for_user,
+    session_checkin_url,
+)
+
+
+# Backwards-compatible aliases used by older imports in the project.
+def _absolute_url(request, name, *args, **kwargs):
+    return absolute_url(request, name, *args, **kwargs)
+
+
+def _session_checkin_url(request, session):
+    return session_checkin_url(request, session)
+
+
+def _membership_checkin_url(request, subscription):
+    return membership_checkin_url(request, subscription)
+
+
+def _attach_session_qr(request, session):
+    return attach_session_qr(request, session)
+
+
+def _attach_membership_qr(request, subscription):
+    return attach_membership_qr(request, subscription)
+
+
+def _refresh_due_membership_qrs_for_user(user):
+    return refresh_due_membership_qrs_for_user(user)
+
+
+def _create_operational_records_for_confirmed_booking(booking, *, actor=None, request=None):
+    return create_operational_records_for_confirmed_booking(booking, actor=actor, request=request)
 
 
 def _is_owner_or_admin(user, gym):
     return gym.owner_id == user.id or user.is_staff or user.is_superuser or getattr(user, 'role', '') == 'ADMIN'
 
 
-def _absolute_url(request, name, *args, **kwargs):
-    path = reverse(name, args=args, kwargs=kwargs)
-    try:
-        return request.build_absolute_uri(path)
-    except Exception:
-        site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
-        return f'{site_url}{path}' if site_url else path
-
-
-def _session_checkin_url(request, session):
-    return _absolute_url(request, 'session_check_in', session.qr_token)
-
-
-def _membership_checkin_url(request, subscription):
-    return _absolute_url(request, 'membership_check_in', subscription.current_qr_token)
-
-
-def _attach_session_qr(request, session):
-    url = _session_checkin_url(request, session)
-    session.qr_url = url
-    session.qr_data_uri = build_qr_data_uri(url)
-    return session
-
-
-def _attach_membership_qr(request, subscription):
-    url = _membership_checkin_url(request, subscription)
-    subscription.qr_url = url
-    subscription.qr_data_uri = build_qr_data_uri(url)
-    return subscription
-
-
-def _refresh_due_membership_qrs_for_user(user):
-    if not user.is_authenticated:
-        return 0
-    refreshed = 0
-    for subscription in GymSubscription.objects.filter(customer=user, status=GymSubscription.Status.ACTIVE):
-        subscription.mark_expired_if_needed()
-        if subscription.status == GymSubscription.Status.ACTIVE and subscription.needs_qr_refresh:
-            subscription.refresh_qr_if_needed()
-            refreshed += 1
-    return refreshed
-
-
-def _create_operational_records_for_confirmed_booking(booking, *, actor=None, request=None):
-    """Create one-time Session and optional GymSubscription after owner confirms a booking."""
-    session, session_created = Session.objects.get_or_create(
-        booking=booking,
-        defaults={
-            'customer': booking.customer,
-            'gym': booking.gym,
-            'start_time': booking.booking_datetime,
-            'end_time': booking.booking_datetime + timedelta(hours=1),
-        },
-    )
-
-    subscription = None
-    subscription_created = False
-    if booking.plan and not booking.plan.is_trial:
-        start_date = timezone.localdate(booking.booking_datetime)
-        end_date = start_date + timedelta(days=max(booking.plan.duration_days, 1))
-        subscription, subscription_created = GymSubscription.objects.get_or_create(
-            source_booking=booking,
-            defaults={
-                'customer': booking.customer,
-                'gym': booking.gym,
-                'plan': booking.plan,
-                'status': GymSubscription.Status.ACTIVE,
-                'start_date': start_date,
-                'end_date': end_date,
-            },
-        )
-        subscription.refresh_qr_if_needed(force=True)
-
-    if session_created:
-        log_event(level='INFO', category='SESSION', event='session_created', message=f'Session created for booking {booking.id}', actor=actor, request=request, related_model='Session', related_id=session.id)
-    if subscription_created and subscription:
-        log_event(level='INFO', category='SUBSCRIPTION', event='subscription_created', message=f'Access pass created for booking {booking.id}', actor=actor, request=request, related_model='GymSubscription', related_id=subscription.id)
-
-    return session, subscription
-
-
 @login_required
 def create_booking(request, gym_id):
     gym = get_object_or_404(Gym, id=gym_id, status=Gym.Status.APPROVED)
     if request.method == 'POST':
-        booking_datetime = parse_datetime(request.POST.get('booking_datetime', ''))
+        booking_datetime = normalize_booking_datetime(request.POST.get('booking_datetime', ''))
         note = request.POST.get('customer_note', '')
         plan = None
         plan_id = request.POST.get('plan')
@@ -135,26 +90,24 @@ def create_booking(request, gym_id):
         send_booking_created_to_owner(booking, actor=request.user, request=request)
         log_event(level='INFO', category='BOOKING', event='booking_created', message=f'Booking request for {gym.name}', actor=request.user, request=request, related_model='Booking', related_id=booking.id)
 
-        try:
-            from apps.notifications.models import Notification
-            Notification.objects.create(
-                recipient=gym.owner,
-                sender=request.user,
-                kind=Notification.Kind.BOOKING,
-                title=f'New booking request for {gym.name}',
-                message=f'{request.user.username} requested a visit at {booking.booking_datetime}.',
-                url='/dashboard/owner/',
-            )
-            Notification.objects.create(
-                recipient=request.user,
-                sender=gym.owner,
-                kind=Notification.Kind.BOOKING,
-                title='Booking request sent',
-                message=f'Your booking request for {gym.name} is now pending.',
-                url='/dashboard/customer/',
-            )
-        except Exception:
-            pass
+        create_notification_safely(
+            request=request,
+            recipient=gym.owner,
+            sender=request.user,
+            kind=Notification.Kind.BOOKING,
+            title=f'New booking request for {gym.name}',
+            message=f'{request.user.username} requested a visit at {booking.booking_datetime}.',
+            url='/dashboard/owner/',
+        )
+        create_notification_safely(
+            request=request,
+            recipient=request.user,
+            sender=gym.owner,
+            kind=Notification.Kind.BOOKING,
+            title='Booking request sent',
+            message=f'Your booking request for {gym.name} is now pending.',
+            url='/dashboard/customer/',
+        )
 
         messages.success(request, 'Booking request sent!')
     return redirect('gym_detail', slug=gym.slug)
@@ -192,13 +145,9 @@ def update_booking_status(request, booking_id, status):
         session = None
         subscription = None
         if new_status == Booking.Status.CONFIRMED:
-            session, subscription = _create_operational_records_for_confirmed_booking(booking, actor=request.user, request=request)
-        elif new_status == Booking.Status.CANCELLED:
-            if hasattr(booking, 'session') and booking.session.status != Session.Status.CANCELLED:
-                booking.session.cancel('Cancelled by gym owner.')
-            if hasattr(booking, 'subscription') and booking.subscription.status == GymSubscription.Status.ACTIVE:
-                booking.subscription.status = GymSubscription.Status.CANCELLED
-                booking.subscription.save(update_fields=['status', 'updated_at'])
+            session, subscription = create_operational_records_for_confirmed_booking(booking, actor=request.user, request=request)
+        elif new_status in {Booking.Status.CANCELLED, Booking.Status.REJECTED}:
+            cancel_operational_records_for_booking(booking, actor=request.user, request=request, reason='Closed by gym owner.')
 
     action_text = {
         Booking.Status.CONFIRMED: 'confirmed',
@@ -206,25 +155,22 @@ def update_booking_status(request, booking_id, status):
         Booking.Status.CANCELLED: 'cancelled',
     }[new_status]
 
-    try:
-        from apps.notifications.models import Notification
-        Notification.objects.create(
-            recipient=booking.customer,
-            sender=request.user,
-            kind=Notification.Kind.BOOKING,
-            title=f'Booking {action_text}',
-            message=f'Your booking request for {booking.gym.name} was {action_text}.',
-            url='/bookings/sessions/',
-        )
-    except Exception:
-        pass
+    create_notification_safely(
+        request=request,
+        recipient=booking.customer,
+        sender=request.user,
+        kind=Notification.Kind.BOOKING,
+        title=f'Booking {action_text}',
+        message=f'Your booking request for {booking.gym.name} was {action_text}.',
+        url='/bookings/sessions/' if new_status == Booking.Status.CONFIRMED else '/dashboard/customer/',
+    )
 
     send_booking_status_to_customer(booking, action_text, actor=request.user, request=request)
     if new_status == Booking.Status.CONFIRMED and session:
-        _attach_session_qr(request, session)
+        attach_session_qr(request, session)
         send_session_qr_to_customer(session, session.qr_url, session.qr_data_uri, actor=request.user, request=request)
         if subscription:
-            _attach_membership_qr(request, subscription)
+            attach_membership_qr(request, subscription)
             send_membership_access_pass_to_customer(subscription, subscription.qr_url, subscription.qr_data_uri, actor=request.user, request=request)
 
     log_event(level='INFO', category='BOOKING', event='booking_status_updated', message=f'Booking {booking.id} moved from {old_status} to {new_status}', actor=request.user, request=request, related_model='Booking', related_id=booking.id, metadata={'old_status': old_status, 'new_status': new_status})
@@ -252,25 +198,17 @@ def cancel_own_booking(request, booking_id):
 
     booking.status = Booking.Status.CANCELLED
     booking.save(update_fields=['status'])
+    cancel_operational_records_for_booking(booking, actor=request.user, request=request, reason='Cancelled by customer.')
 
-    if hasattr(booking, 'session') and booking.session.status != Session.Status.CANCELLED:
-        booking.session.cancel('Cancelled by customer.')
-    if hasattr(booking, 'subscription') and booking.subscription.status == GymSubscription.Status.ACTIVE:
-        booking.subscription.status = GymSubscription.Status.CANCELLED
-        booking.subscription.save(update_fields=['status', 'updated_at'])
-
-    try:
-        from apps.notifications.models import Notification
-        Notification.objects.create(
-            recipient=booking.gym.owner,
-            sender=request.user,
-            kind=Notification.Kind.BOOKING,
-            title='Booking cancelled by customer',
-            message=f'{request.user.username} cancelled a booking for {booking.gym.name}.',
-            url='/dashboard/owner/',
-        )
-    except Exception:
-        pass
+    create_notification_safely(
+        request=request,
+        recipient=booking.gym.owner,
+        sender=request.user,
+        kind=Notification.Kind.BOOKING,
+        title='Booking cancelled by customer',
+        message=f'{request.user.username} cancelled a booking for {booking.gym.name}.',
+        url='/dashboard/owner/',
+    )
 
     log_event(level='INFO', category='BOOKING', event='booking_cancelled_by_customer', message=f'Customer cancelled booking {booking.id}', actor=request.user, request=request, related_model='Booking', related_id=booking.id)
     messages.success(request, 'Booking cancelled.')
@@ -279,7 +217,7 @@ def cancel_own_booking(request, booking_id):
 
 @login_required
 def my_sessions(request):
-    _refresh_due_membership_qrs_for_user(request.user)
+    refresh_due_membership_qrs_for_user(request.user)
     sessions = Session.objects.filter(customer=request.user).select_related('gym', 'booking', 'booking__plan')
     now = timezone.now()
     upcoming = sessions.filter(status=Session.Status.UPCOMING, start_time__gte=now).order_by('start_time')
@@ -288,7 +226,7 @@ def my_sessions(request):
 
     # For demo friendliness, future sessions include QR data directly in the list.
     for session in upcoming:
-        _attach_session_qr(request, session)
+        attach_session_qr(request, session)
 
     return render(request, 'bookings/my_sessions.html', {
         'upcoming_sessions': upcoming,
@@ -300,7 +238,7 @@ def my_sessions(request):
 @login_required
 def session_detail(request, session_id):
     session = get_object_or_404(Session.objects.select_related('gym', 'booking', 'booking__plan'), id=session_id, customer=request.user)
-    _attach_session_qr(request, session)
+    attach_session_qr(request, session)
     return render(request, 'bookings/session_detail.html', {'session': session})
 
 
@@ -318,18 +256,15 @@ def cancel_session(request, session_id):
     session.booking.status = Booking.Status.CANCELLED
     session.booking.save(update_fields=['status'])
 
-    try:
-        from apps.notifications.models import Notification
-        Notification.objects.create(
-            recipient=session.gym.owner,
-            sender=request.user,
-            kind=Notification.Kind.BOOKING,
-            title='Session cancelled by customer',
-            message=f'{request.user.username} cancelled a session for {session.gym.name}.',
-            url='/dashboard/owner/',
-        )
-    except Exception:
-        pass
+    create_notification_safely(
+        request=request,
+        recipient=session.gym.owner,
+        sender=request.user,
+        kind=Notification.Kind.BOOKING,
+        title='Session cancelled by customer',
+        message=f'{request.user.username} cancelled a session for {session.gym.name}.',
+        url='/dashboard/owner/',
+    )
 
     log_event(level='INFO', category='SESSION', event='session_cancelled_by_customer', message=f'Session {session.id} cancelled by customer', actor=request.user, request=request, related_model='Session', related_id=session.id)
     messages.success(request, 'Session cancelled.')
@@ -338,14 +273,14 @@ def cancel_session(request, session_id):
 
 @login_required
 def my_memberships(request):
-    _refresh_due_membership_qrs_for_user(request.user)
+    refresh_due_membership_qrs_for_user(request.user)
     subscriptions = GymSubscription.objects.filter(customer=request.user).select_related('gym', 'plan')
     active = []
     expired_or_closed = []
     for subscription in subscriptions:
         subscription.mark_expired_if_needed()
         if subscription.status == GymSubscription.Status.ACTIVE:
-            _attach_membership_qr(request, subscription)
+            attach_membership_qr(request, subscription)
             active.append(subscription)
         else:
             expired_or_closed.append(subscription)

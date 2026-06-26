@@ -1,395 +1,409 @@
-# myGym — Django Marketplace & Operations Platform
 
-**myGym** is a modular Django web application that demonstrates how to build a multi-role marketplace platform with customer dashboards, business/operator dashboards, booking workflows, membership access, QR-based check-ins, admin controls, notifications, email services, logging, and SQL-backed data models.
+## v3 additions
 
-The project started as a gym marketplace, but it has evolved into a broader example of a service-commerce and operations platform. The same architecture can be adapted to e-commerce, network marketing, affiliate systems, subscription platforms, wallet/ledger systems, and member-management products.
+- Gym detail pages now include a Photos section, Reviews section, plans, trainers, and booking form.
+- Customers can submit one review per gym.
+- Owners receive in-app notifications for bookings and reviews.
+- Customers receive in-app notification after sending a booking request.
+- Owner dashboard shows customer names, emails, requested booking time, status, and notes per gym.
+- New notifications module: `/notifications/`.
 
----
-
-## Why this project matters
-
-This project is not a simple CRUD demo. It shows end-to-end ownership of a real business workflow:
-
-```text
-Customer discovers a venue
-→ customer sends a booking request
-→ owner approves or rejects it
-→ system creates a confirmed session
-→ customer receives QR access
-→ owner validates entry/check-in
-→ dashboards and logs update
-→ admin can monitor and control the platform
-```
-
-That workflow demonstrates the same backend thinking needed for commercial platforms where users, orders, referrals, commissions, subscriptions, wallets, reporting, and administrative tools must work together cleanly.
-
----
-
-## Relevant to e-commerce / MLM / affiliate-style platforms
-
-Although this project is built around gyms and wellness venues, several parts are directly transferable to a network-marketing or e-commerce system:
-
-| Requirement in target platform | Similar foundation in myGym |
-|---|---|
-| Online store / order management | Booking request and approval lifecycle, plan selection, status tracking |
-| Member dashboard | Customer dashboard with bookings, sessions, memberships, notifications |
-| Seller/operator dashboard | Owner dashboard for gyms, requests, sessions, and check-ins |
-| Admin management tools | Custom Control Deck for users, gyms, bookings, reviews, and logs |
-| Subscription management | GymSubscription model with active/expired/cancelled states |
-| Access / entitlement validation | QR-based Digital Access Pass with 24-hour refresh |
-| Reporting | Analytics app, owner dashboard metrics, check-in history |
-| Financial system foundation | Booking payment fields, plan pricing, subscription records, status tracking |
-| Auditability | SystemLog app, email logs, request/error logging middleware |
-| Maintainability | Separated Django apps, services, templates, and migrations |
-
-For an MLM/e-commerce platform, the next natural modules would be:
-
-- product catalog and cart
-- order and invoice models
-- referral/sponsor tree
-- commission ledger
-- wallet and payout records
-- bonus calculation engine
-- member rank/level system
-- admin payout approval workflow
-- Celery tasks for asynchronous commission calculations
-
----
-
-## Core features
-
-### Multi-role account system
-
-- Customer users
-- Owner/business users
-- Admin/control users
-- Role-based access control
-- Protected dashboards and management pages
-
-### Gym / business marketplace
-
-- Venue listing and detail pages
-- Search and filtering UI
-- Facility tags
-- Membership plans
-- Trainer profiles
-- Photo/gallery foundation
-- Imported/demo business data support
-
-### Booking workflow
-
-- Customer booking request form
-- Owner approve/reject flow
-- Booking statuses: pending, confirmed, cancelled, rejected
-- Customer notes
-- Plan selection
-- Email and in-app notification events
-
-### Sessions system
-
-- Confirmed bookings create operational sessions
-- Customer can view upcoming, previous, and cancelled sessions
-- One-time QR code for session check-in
-- QR becomes used after successful check-in
-- Session status tracking
-
-### Digital Access Pass / membership QR
-
-- Membership access pass for subscribed users
-- QR token refreshes every 24 hours
-- QR remains available until subscription expiry/cancellation
-- Owner/staff can validate membership QR codes
-- Check-in records are stored for attendance history
-
-### Owner dashboard
-
-- Business overview
-- Booking request management
-- Session/check-in visibility
-- Gym management tools
-- Customer information for relevant bookings
-
-### Customer dashboard
-
-- Bookings overview
-- Sessions page
-- Memberships / access pass page
-- Notifications
-- QR display for sessions and membership passes
-
-### Control Deck
-
-A custom administrative control panel at `/control/` for platform operators.
-
-Includes:
-
-- platform overview metrics
-- user management
-- role changes
-- gym approval/rejection
-- booking status controls
-- review moderation
-- system logs
-- links to Django Admin for technical database administration
-
-### Email system
-
-Centralized email service layer under `apps/emails/`.
-
-Supported events include:
-
-- welcome emails
-- booking request email to owner
-- booking status update email to customer
-- gym approval/rejection email
-- review notification email
-- session QR email
-- membership access pass email
-
-### Notifications
-
-- In-app notifications for customers and owners
-- Booking and review notifications
-- Dashboard notification visibility
-
-### Logging and observability
-
-- `apps/systemlogs` app
-- database-backed system logs
-- request/error logging middleware
-- file logs for application and email activity
-- Control Deck log viewer
-
----
-
-## Technical stack
-
-- Python
-- Django 5
-- Django Templates
-- Bootstrap 5
-- HTML / CSS / JavaScript
-- SQL database support through Django ORM
-- MySQL currently supported via `mysqlclient`
-- SQLite supported for local lightweight development
-- PostgreSQL can be supported through Django ORM with standard database configuration
-- Git
-- Pillow
-- qrcode
-- python-decouple
-
----
-
-## Project structure
-
-```text
-mygym_startup/
-├── apps/
-│   ├── accounts/        # custom user roles and authentication views
-│   ├── gyms/            # venue, plans, trainers, facilities, imports
-│   ├── bookings/        # bookings, sessions, memberships, QR access, check-ins
-│   ├── reviews/         # customer reviews and rating logic
-│   ├── dashboard/       # customer and owner dashboards
-│   ├── controlpanel/    # custom admin/operator control deck
-│   ├── analytics/       # platform and business metrics
-│   ├── notifications/   # in-app notification system
-│   ├── emails/          # centralized email service layer
-│   └── systemlogs/      # logging, observability, diagnostics
-├── core/                # Django settings, URLs, WSGI/ASGI
-├── templates/           # Django templates
-├── static/              # CSS and static assets
-├── manage.py
-├── requirements.txt
-└── README.md
-```
-
----
-
-## Database and configuration
-
-Configuration is environment-based.
-
-Example `.env`:
-
-```env
-DEBUG=True
-SECRET_KEY=your-secret-key
-
-DB_ENGINE=mysql
-DB_NAME=mygym_local
-DB_USER=root
-DB_PASSWORD=your-password
-DB_HOST=localhost
-DB_PORT=3306
-
-EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-DEFAULT_FROM_EMAIL=myGym <noreply@example.com>
-SITE_URL=http://127.0.0.1:8000
-```
-
-For SQLite local development:
-
-```env
-DB_ENGINE=sqlite
-DB_NAME=db.sqlite3
-```
-
----
-
-## Installation
+After updating, run:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows PowerShell
-
-pip install -r requirements.txt
+python manage.py makemigrations notifications reviews bookings gyms dashboard analytics accounts
 python manage.py migrate
-python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Open:
+## v0.8 UI/UX Bootstrap Refresh
 
-```text
-http://127.0.0.1:8000/
-```
+- Added Bootstrap 5 CDN integration.
+- Redesigned navbar, landing/explore page, gym cards, table view, map container, gym detail page, customer dashboard, owner dashboard, and auth pages.
+- Kept backend logic unchanged; no migration required for this UI-only upgrade.
 
----
-
-## Useful commands
+Run:
 
 ```bash
 python manage.py check
-python manage.py migrate
-python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Email diagnostics:
+
+---
+
+Powered by Arad Arshadi  
+GitHub: https://github.com/AradArshadi
+
+## v0.9 Control Deck
+
+The project now includes a custom admin/operator dashboard at `/control/`.
+
+Access is limited to superusers, staff users, or users with role `ADMIN`.
+
+Control Deck features:
+- Platform overview metrics
+- User management and role changes
+- Gym approval/rejection workflow
+- Booking status controls
+- Review moderation
+- Links back to Django Admin for low-level database administration
+
+Django Admin remains available at `/admin/` as the technical back office.
+
+## v0.9.1 Email System
+
+This version adds a centralized email service layer under `apps/emails/`.
+
+Email events currently supported:
+- Customer/owner/trainer welcome email after registration
+- Booking request email to gym owner / gym contact email
+- Booking status email to customer when accepted, rejected, cancelled, or updated by Control Deck
+- Gym approval/rejection email to owner
+- New review email to gym owner
+
+### Local development
+
+By default emails are printed to the terminal:
+
+```env
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+```
+
+### SMTP deployment
+
+For SMTP, set:
+
+```env
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@example.com
+EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=myGym <your-email@example.com>
+SITE_URL=https://yourusername.pythonanywhere.com
+```
+
+### Test email
 
 ```bash
+python manage.py test_email your-email@example.com
+```
+
+No database migration is required for v0.9.1.
+
+## v0.9.2 Logging & Observability
+
+This version adds a production debugging layer so silent failures are easier to detect.
+
+Added:
+- `apps/systemlogs` app
+- `SystemLog` database model
+- `/control/logs/` Control Deck page
+- File logs in `logs/mygym.log` and `logs/emails.log`
+- Email diagnostics for every send attempt, success, skip, and failure
+- Request/error logging middleware
+- `show_email_config` command for sanitized email configuration checks
+
+After updating, run:
+
+```bash
+python manage.py migrate
+python manage.py check
 python manage.py show_email_config
 python manage.py test_email your-email@example.com
 ```
 
-Demo data commands may exist depending on the branch/version:
+Important deployment notes:
+- The `logs/` directory is intentionally ignored by Git.
+- Email credentials must stay inside `.env` and must never be committed.
+- Use `/control/logs/` to inspect email failures and admin/business events.
+
+Useful commands:
 
 ```bash
-python manage.py seed_demo
-python manage.py seed_demo_users
-python manage.py seed_demo_reviews
+tail -n 80 logs/emails.log
+tail -n 80 logs/mygym.log
 ```
 
----
+## v0.9.2.2 — Real Gym Import Pipeline
 
-## Current version
+This version replaces fake seed data with a safer import workflow for real public data.
+
+### What changed
+
+- Added `ImportBatch` model to group imported data.
+- Added import tracking fields on `Gym`:
+  - `is_imported`
+  - `is_claimed`
+  - `source`
+  - `external_id`
+  - `import_batch`
+  - `imported_at`
+- Added OpenStreetMap/Overpass import command.
+- Added safe wipe commands so imported data can be removed without touching owner-created gyms.
+
+### Run migrations
+
+```bash
+python manage.py makemigrations gyms
+python manage.py migrate
+```
+
+### Import gyms from OpenStreetMap
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran"
+```
+
+Import as approved immediately:
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --approve
+```
+
+Dry run:
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --dry-run
+```
+
+Limit records:
+
+```bash
+python manage.py import_gyms_osm --city "Tabriz" --country "Iran" --limit 25
+```
+
+### List import batches
+
+```bash
+python manage.py list_import_batches
+```
+
+### Wipe one import batch
+
+```bash
+python manage.py wipe_import_batch 1
+```
+
+If some imported gyms have bookings/reviews/favorites, they are protected by default. To delete them anyway:
+
+```bash
+python manage.py wipe_import_batch 1 --force
+```
+
+### Wipe imported gyms by city
+
+```bash
+python manage.py wipe_imported_gyms --city "Tabriz"
+```
+
+This never deletes owner-created gyms or claimed gyms.
+
+## v0.9.2.4 security/import hotfix notes
+
+### Emergency rollback for accidentally approved imports
+
+If a Geoapify batch was imported as approved, move it back to review/pending:
+
+```bash
+python manage.py mark_import_batch_pending 3
+```
+
+### Safer Geoapify importing
+
+`--approve` is now ignored unless it is deliberately combined with `--allow-auto-approve`.
+Default imported gyms stay `PENDING` for Control Deck review.
+
+```bash
+python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran" --radius-km 25 --limit 100
+```
+
+Unsafe demo-only auto approval:
+
+```bash
+python manage.py import_gyms_geoapify --city "Tabriz" --country "Iran" --radius-km 25 --approve --allow-auto-approve
+```
+
+### Public signup role security
+
+The public register page now only allows:
+
+- Customer
+- Gym Owner
+
+Admin accounts cannot be created from public signup. Admin promotion is handled from the Control Deck, and promotion to `ADMIN` is restricted to Django superusers.
+
+### Test data reset trigger
+
+Delete imported, unclaimed test gyms safely:
+
+```bash
+python manage.py wipe_test_data --source geoapify --city Tabriz --yes --delete-empty-batches
+```
+
+Full demo/test cleanup, still protecting superusers and claimed gyms:
+
+```bash
+python manage.py wipe_test_data --yes --include-demo-users --delete-empty-batches
+```
+
+### Gym photos
+
+Owner-uploaded gym photos are already supported through gym management. Geoapify Places does not reliably provide gym photos, so imported gyms still use the current placeholder unless photos are uploaded later by an owner/admin.
+
+## v0.9.2.9 — Sessions + Digital Access Pass
+
+This version adds the first operational access layer to myGym.
+
+### What changed
+
+- Added `Session` model for confirmed one-time visits.
+- Added `GymSubscription` model for active gym memberships / Access Passes.
+- Added `GymCheckIn` model for attendance history.
+- Owner confirmation now creates a one-time `Session` automatically.
+- If the accepted booking includes a non-trial membership plan, the system also creates an active `GymSubscription`.
+- One-time session QR codes are generated for confirmed sessions and become invalid after check-in.
+- Membership Access Pass QR codes are valid while the subscription is active and refresh every 24 hours when the user logs in or opens the dashboard/access pass page.
+- Customers now have:
+  - My Sessions page
+  - My Access Passes page
+  - QR display for upcoming sessions
+  - QR display for active memberships
+  - cancel upcoming session action
+- Owners now have:
+  - today's sessions
+  - today's check-ins
+  - active member count
+  - QR validation/confirmation pages
+- Added branded email templates, including QR emails for confirmed sessions and membership Access Passes.
+
+### QR rules
+
+One-time session QR:
 
 ```text
-v0.9.2.9 — Sessions + Digital Access Pass
+Confirmed booking -> Session -> QR -> owner scans -> check-in -> QR becomes used
 ```
 
-Main additions in this version:
+Membership Access Pass QR:
 
-- one-time QR codes for confirmed sessions
-- membership QR access passes
-- 24-hour QR refresh for active memberships
-- customer sessions page
-- customer memberships/access pass page
-- owner QR validation and check-in flow
-- attendance history model
-- QR emails
-- MySQL-safe migration for new access tables
+```text
+Active subscription -> Access Pass QR -> owner scans -> attendance recorded
+```
 
----
+The membership QR is not consumed after one scan. It remains valid until:
 
-## Architecture notes
+- 24 hours pass,
+- the customer opens the account and receives a refreshed QR,
+- the subscription expires,
+- or the subscription is cancelled.
 
-The project is intentionally split into small Django apps so that each business capability is isolated:
+### Install / update commands
 
-- `accounts` handles identity and roles
-- `gyms` handles supply-side business profiles
-- `bookings` handles transactions, sessions, memberships, and access validation
-- `dashboard` handles user-facing reporting
-- `controlpanel` handles platform operations
-- `emails` centralizes communication
-- `systemlogs` supports diagnostics and production debugging
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py check
+python manage.py runserver
+```
 
-This structure makes the code easier to transfer to another backend team and easier to extend into new domains such as e-commerce, affiliate marketing, referral systems, wallets, or commission engines.
+### Demo flow
 
----
+1. Customer opens a gym detail page.
+2. Customer selects one-time/trial or a membership plan.
+3. Customer sends a booking request.
+4. Owner accepts the booking from the owner dashboard.
+5. The system creates a `Session`.
+6. If a paid/non-trial plan was selected, the system also creates a `GymSubscription`.
+7. Customer opens `My Sessions` or `My Access Passes`.
+8. Owner scans the QR URL with a phone.
+9. Owner confirms entry.
+10. The system records a `GymCheckIn`.
 
-## What I would build next for an MLM / e-commerce version
+### Strategy note
 
-If this architecture were adapted into a network-marketing and e-commerce platform, I would add the following modules:
+This feature moves myGym from a simple discovery/booking platform toward gym operating infrastructure:
 
-### Commerce
+- access management
+- attendance tracking
+- member history
+- check-in analytics
+- future retention insights
 
-- Product
-- ProductVariant
-- Cart
-- Order
-- OrderItem
-- Invoice
-- PaymentTransaction
-- Shipment/Fulfillment status
+This directly supports the larger strategic vision of myGym as a sports and wellness operating system rather than only a gym directory.
 
-### Referral and network structure
+## v0.9.2.10 — Infrastructure hardening hotfix
 
-- Sponsor relationship
-- Referral tree
-- Placement tree
-- Member rank/level
-- Team volume tracking
-- Direct and indirect referral reporting
+This patch intentionally keeps the existing UI/templates/static styling unchanged and focuses on backend reliability.
 
-### Commission engine
+### Fixed
 
-- CommissionRule
-- CommissionRun
-- CommissionLedger
-- BonusLedger
-- WalletTransaction
-- PayoutRequest
-- PayoutApproval
+- Control Deck booking confirmation now uses the same operational creation flow as owner confirmation.
+  - Confirmed bookings create a `Session`.
+  - Confirmed bookings with a non-trial plan create/reactivate a `GymSubscription` Access Pass.
+  - QR emails are sent from both owner and Control Deck confirmation flows.
+- Booking datetime input from HTML `datetime-local` is normalized into the active Django timezone (`Europe/Berlin`) before saving.
+- Owner dashboard is now role-protected. Customers are redirected back to the customer dashboard instead of seeing an irrelevant empty owner view.
+- Notification failures are logged through `SystemLog` instead of being silently swallowed.
+- SystemLog categories now include `NOTIFICATION`, `SESSION`, `SUBSCRIPTION`, and `CHECKIN`.
+- `.env.example` now has one clean email/config section instead of repeated SMTP blocks.
+- Production settings are hardened behind `ENVIRONMENT=production`:
+  - production requires a real `SECRET_KEY`,
+  - production requires real `ALLOWED_HOSTS` when `DEBUG=False`,
+  - HTTPS/security cookie/HSTS settings can be controlled from env.
+- Added deployment assets:
+  - `Dockerfile`
+  - `docker-entrypoint.sh`
+  - `Procfile`
+  - `.dockerignore`
+  - `HEALTHCHECK.md`
+- Added tests for:
+  - owner booking confirmation,
+  - Control Deck/admin booking confirmation,
+  - one-time QR check-in,
+  - membership expiry refresh,
+  - owner-dashboard permission behavior,
+  - timezone-aware booking datetime handling.
 
-### Background processing
+### SMTP diagnostics
 
-- Celery tasks for commission calculations
-- Redis broker/cache
-- scheduled payout runs
-- async email/report generation
+Use the existing sanitized config command first:
 
-### PWA readiness
+```bash
+python manage.py show_email_config
+```
 
-- service worker
-- web app manifest
-- offline-safe dashboard shell
-- mobile-first member dashboard
+Then run the deeper delivery probe:
 
----
+```bash
+python manage.py email_probe your-email@example.com --template
+```
 
-## Project value
+For real SMTP delivery, `.env` must use:
 
-This project demonstrates that I can take ownership of a Django platform from architecture to implementation:
+```env
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_USE_SSL=False
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=myGym <your-email@gmail.com>
+SITE_URL=https://your-domain.example
+```
 
-- design relational data models
-- separate business logic across maintainable apps
-- build multi-role dashboards
-- implement approval workflows
-- integrate email and notifications
-- work with SQL migrations
-- handle MySQL migration issues
-- build admin/operator tools beyond default Django Admin
-- document the system for transfer and future development
+If Gmail is used, `EMAIL_HOST_PASSWORD` must be a Gmail app password, not the normal account password.
 
-It is a practical foundation for service-commerce, subscription, marketplace, and member-management systems.
+### After updating
 
----
-
-## Author
-
-**Arad Arshadi**  
-Bachelor's Degree — University of Tabriz  
-Django / Python Developer  
-GitHub: https://github.com/AradArshadi
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py check
+python manage.py test apps.bookings
+python manage.py show_email_config
+python manage.py email_probe your-email@example.com --template
+```

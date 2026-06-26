@@ -1,24 +1,37 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Prefetch, Q
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
-from apps.gyms.models import Gym
+
 from apps.bookings.models import Booking, GymCheckIn, GymSubscription, Session
+from apps.bookings.services import refresh_due_membership_qrs_for_user
+from apps.gyms.models import Gym
 from apps.reviews.models import Favorite, Review
 
 
+def _can_access_owner_dashboard(user):
+    return (
+        user.is_authenticated
+        and (
+            getattr(user, 'role', '') in {'OWNER', 'ADMIN'}
+            or user.is_staff
+            or user.is_superuser
+        )
+    )
+
+
+# Backwards-compatible alias for older imports.
 def _refresh_due_membership_qrs_for_user(user):
-    refreshed = 0
-    for subscription in GymSubscription.objects.filter(customer=user, status=GymSubscription.Status.ACTIVE):
-        subscription.mark_expired_if_needed()
-        if subscription.status == GymSubscription.Status.ACTIVE and subscription.needs_qr_refresh:
-            subscription.refresh_qr_if_needed()
-            refreshed += 1
-    return refreshed
+    return refresh_due_membership_qrs_for_user(user)
 
 
 @login_required
 def owner_dashboard(request):
+    if not _can_access_owner_dashboard(request.user):
+        messages.warning(request, 'The owner dashboard is only available for gym owners and platform admins.')
+        return redirect('customer_dashboard')
+
     recent_booking_qs = Booking.objects.select_related('customer', 'trainer', 'plan').order_by('-created_at')
     gyms = Gym.objects.filter(owner=request.user).prefetch_related(
         Prefetch('bookings', queryset=recent_booking_qs, to_attr='recent_bookings')
@@ -47,7 +60,7 @@ def owner_dashboard(request):
 
 @login_required
 def customer_dashboard(request):
-    _refresh_due_membership_qrs_for_user(request.user)
+    refresh_due_membership_qrs_for_user(request.user)
     bookings = Booking.objects.filter(customer=request.user).select_related('gym', 'trainer', 'plan')[:10]
     favorites = Favorite.objects.filter(user=request.user).select_related('gym')[:10]
     reviews = Review.objects.filter(user=request.user).select_related('gym')[:10]
