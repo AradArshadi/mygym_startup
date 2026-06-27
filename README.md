@@ -451,3 +451,31 @@ python manage.py check
 git tag -a v0.9.3 -m "myGym v0.9.3 — Fitness Home Rebase"
 git push origin main --tags
 ```
+
+
+## v0.9.3.1 — Mobile UX & Activity Calendar Hotfix
+
+This hotfix improves the first `v0.9.3` Fitness Home experience:
+
+- Mobile Profile now includes logout access.
+- Global dark/light mode toggle added with browser persistence.
+- Activity calendar now uses myGym orange intensity cells.
+- Calendar flows from top-left and supports 30 / 90 / 120 / 360 day ranges.
+- No database migration is required for this hotfix.
+
+## v0.9.3.2 — Activity Map & Mobile Navigation Debug Hotfix
+
+- Replaced the oversized activity tiles with a GitHub-style workout contribution calendar.
+- Calendar counts now match the selected 30/90/120/360 day range.
+- Added orange activity intensity levels aligned with the myGym design language.
+- Restored the mobile hamburger as a fallback while keeping the bottom nav.
+- Added `debug_workout_activity` management command for diagnosing workout/date/range issues.
+
+
+## v0.9.3.3 — Interactive Activity Map UX Hotfix
+
+- Training Activity map cells are now clickable/tappable.
+- Each selected day shows the workout count for that day.
+- Month labels no longer collide in short ranges.
+- Removed extra helper copy from the contribution map.
+- No database migration required.

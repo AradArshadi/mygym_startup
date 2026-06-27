@@ -74,3 +74,88 @@ class FitnessHomeTests(TestCase):
         for name in ['fitness_home', 'discover', 'log_workout', 'chat_home', 'profile_hub']:
             response = self.client.get(reverse(name))
             self.assertIn(response.status_code, [200, 302])
+
+class FitnessThemeAndCalendarTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.customer = self.User.objects.create_user(
+            username='calendar_customer',
+            email='calendar@example.com',
+            password='pass12345',
+            role='CUSTOMER',
+        )
+
+    def test_activity_calendar_supports_selected_ranges(self):
+        self.client.force_login(self.customer)
+        for days in [30, 90, 120, 360]:
+            response = self.client.get(reverse('fitness_home'), {'activity_days': days})
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, f'Past {days} days')
+            self.assertContains(response, 'data-activity-map')
+
+    def test_invalid_activity_calendar_range_falls_back_to_30_days(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse('fitness_home'), {'activity_days': 999})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Past 30 days')
+
+    def test_profile_contains_mobile_logout_and_theme_toggle(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse('profile_hub'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Logout')
+        self.assertContains(response, 'data-theme-toggle')
+
+class FitnessActivityMapRegressionTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.customer = self.User.objects.create_user(
+            username='activity_customer',
+            email='activity@example.com',
+            password='pass12345',
+            role='CUSTOMER',
+        )
+
+    def test_activity_summary_counts_selected_range_not_all_time(self):
+        now = timezone.now()
+        WorkoutLog.objects.create(user=self.customer, title='Today', logged_at=now, duration_minutes=30)
+        WorkoutLog.objects.create(user=self.customer, title='Yesterday', logged_at=now - timedelta(days=1), duration_minutes=40)
+        WorkoutLog.objects.create(user=self.customer, title='Old', logged_at=now - timedelta(days=70), duration_minutes=50)
+        summary = fitness_summary(self.customer, activity_days=30)
+        self.assertEqual(summary['total_workouts'], 3)
+        self.assertEqual(summary['activity_range_workouts'], 2)
+        self.assertEqual(summary['activity_range_active_days'], 2)
+
+    def test_activity_calendar_is_github_style_week_grid(self):
+        self.client.force_login(self.customer)
+        WorkoutLog.objects.create(user=self.customer, title='Today', logged_at=timezone.now(), duration_minutes=30)
+        response = self.client.get(reverse('fitness_home'), {'activity_days': 30})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'gh-activity-calendar')
+        self.assertContains(response, 'gh-activity-cell level-1 today')
+        self.assertContains(response, '1 active day in range')
+
+    def test_activity_calendar_cells_are_interactive_and_copy_is_clean(self):
+        self.client.force_login(self.customer)
+        WorkoutLog.objects.create(user=self.customer, title='Today', logged_at=timezone.now(), duration_minutes=30)
+        response = self.client.get(reverse('fitness_home'), {'activity_days': 30})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-activity-map')
+        self.assertContains(response, 'data-activity-detail')
+        self.assertContains(response, 'data-count="1"')
+        self.assertNotContains(response, 'GitHub-style calendar · today is highlighted')
+
+    def test_short_range_month_labels_do_not_overlap_partial_months(self):
+        from .services import training_activity_calendar
+        calendar = training_activity_calendar(self.customer, days=30)
+        labels = calendar['month_labels']
+        if len(labels) > 1:
+            for previous, current in zip(labels, labels[1:]):
+                self.assertGreaterEqual(current['column'] - previous['column'], 4)
+
+    def test_mobile_nav_keeps_hamburger_fallback_available(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse('fitness_home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'navbar-toggler')
+        self.assertContains(response, 'mg-mobile-tabbar')

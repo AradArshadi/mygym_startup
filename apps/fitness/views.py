@@ -12,7 +12,7 @@ from apps.systemlogs.services import log_event
 
 from .forms import WorkoutGoalForm, WorkoutLogForm
 from .models import WorkoutLog
-from .services import fitness_summary, get_or_create_goal
+from .services import fitness_summary, get_or_create_goal, normalize_activity_days
 
 
 @login_required
@@ -24,7 +24,8 @@ def fitness_home(request):
         return redirect('control_overview')
 
     refresh_due_membership_qrs_for_user(request.user)
-    summary = fitness_summary(request.user)
+    activity_days = normalize_activity_days(request.GET.get('activity_days'))
+    summary = fitness_summary(request.user, activity_days=activity_days)
 
     upcoming_session = (
         Session.objects
@@ -94,7 +95,8 @@ def log_workout(request):
 @login_required
 def workout_history(request):
     workouts = WorkoutLog.objects.filter(user=request.user)[:50]
-    summary = fitness_summary(request.user)
+    activity_days = normalize_activity_days(request.GET.get('activity_days'))
+    summary = fitness_summary(request.user, activity_days=activity_days)
     return render(request, 'fitness/history.html', {'workouts': workouts, 'summary': summary})
 
 
@@ -131,7 +133,8 @@ def chat_home(request):
 @login_required
 def profile_hub(request):
     refresh_due_membership_qrs_for_user(request.user)
-    summary = fitness_summary(request.user)
+    activity_days = normalize_activity_days(request.GET.get('activity_days'))
+    summary = fitness_summary(request.user, activity_days=activity_days)
     sessions = Session.objects.filter(customer=request.user).select_related('gym')[:5]
     subscriptions = GymSubscription.objects.filter(customer=request.user).select_related('gym', 'plan')[:5]
     bookings = Booking.objects.filter(customer=request.user).select_related('gym', 'plan')[:5]

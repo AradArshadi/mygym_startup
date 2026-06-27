@@ -1,5 +1,40 @@
 {% extends 'base.html' %}
-{% block title %}Fitness Home · myGym{% endblock %}
+{% block title %}Fitness Home · myGym
+<script>
+  (function () {
+    var map = document.querySelector('[data-activity-map]');
+    var detail = document.querySelector('[data-activity-detail]');
+    if (!map || !detail) return;
+
+    function showDay(cell) {
+      var count = Number(cell.dataset.count || 0);
+      var date = cell.dataset.date || 'Selected day';
+      var weekday = cell.dataset.weekday || '';
+      var word = count === 1 ? 'workout' : 'workouts';
+      detail.innerHTML = '<strong>' + date + '</strong>' +
+        (weekday ? ' · ' + weekday : '') +
+        '<span>' + count + ' ' + word + ' logged</span>';
+      map.querySelectorAll('.gh-activity-cell.selected').forEach(function (item) {
+        item.classList.remove('selected');
+      });
+      cell.classList.add('selected');
+    }
+
+    map.addEventListener('click', function (event) {
+      var cell = event.target.closest('.gh-activity-cell');
+      if (cell) showDay(cell);
+    });
+
+    map.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var cell = event.target.closest('.gh-activity-cell');
+      if (!cell) return;
+      event.preventDefault();
+      showDay(cell);
+    });
+  })();
+</script>
+{% endblock %}
 {% block content %}
 <section class="fitness-shell fitness-home-shell py-4 py-lg-5">
   <div class="container">
@@ -61,21 +96,53 @@
 
     <div class="row g-4 mb-4">
       <div class="col-lg-8">
-        <article class="fitness-card">
-          <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <article class="fitness-card fitness-activity-card">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-3">
             <div>
               <div class="fitness-card-label">Training activity</div>
-              <h2 class="mb-0">{{ summary.total_workouts }} workouts</h2>
+              <h2 class="mb-0">{{ summary.activity_range_workouts }} workouts</h2>
+              <p class="fitness-muted mb-0">Past {{ summary.activity_days }} days</p>
             </div>
-            <span class="fitness-muted">{{ summary.total_minutes }} min logged</span>
+            <div class="activity-range-switch" aria-label="Activity range">
+              {% for option in summary.activity_range_options %}
+                <a href="?activity_days={{ option }}" class="{% if summary.activity_days == option %}active{% endif %}">{{ option }}d</a>
+              {% endfor %}
+            </div>
           </div>
-          <div class="fitness-activity-grid" aria-label="Workout activity grid">
-            {% for day in summary.activity_grid %}
-              <span class="activity-cell level-{{ day.intensity }}{% if day.is_today %} today{% endif %}" title="{{ day.date|date:'M d' }} · {{ day.count }} workout{{ day.count|pluralize }}"></span>
-            {% endfor %}
+
+          <div class="gh-activity-scroll" aria-label="Workout activity calendar for the past {{ summary.activity_days }} days">
+            <div class="gh-activity-calendar" style="--weeks: {{ summary.activity_calendar.total_weeks }};">
+              <div class="gh-month-row" aria-hidden="true">
+                {% for month in summary.activity_calendar.month_labels %}
+                  <span style="grid-column: {{ month.column }};">{{ month.label }}</span>
+                {% endfor %}
+              </div>
+              <div class="gh-weekday-row" aria-hidden="true">
+                <span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span>
+              </div>
+              <div class="gh-activity-grid" data-activity-map>
+                {% for day in summary.activity_calendar.cells %}
+                  <button type="button"
+                          class="gh-activity-cell level-{{ day.intensity }}{% if day.is_today %} today{% endif %}{% if day.is_muted %} muted{% endif %}"
+                          title="{{ day.date|date:'M d, Y' }} · {{ day.count }} workout{{ day.count|pluralize }}"
+                          aria-label="{{ day.date|date:'M d, Y' }}: {{ day.count }} workout{{ day.count|pluralize }}"
+                          data-date="{{ day.date|date:'M d, Y' }}"
+                          data-count="{{ day.count }}"
+                          data-weekday="{{ day.weekday }}">
+                  </button>
+                {% endfor %}
+              </div>
+            </div>
           </div>
-          <div class="d-flex justify-content-between align-items-center mt-3 fitness-muted small">
-            <span>Less</span><span>More</span><span>{{ summary.active_days }} active day{{ summary.active_days|pluralize }} this week</span>
+
+          <div class="gh-activity-detail" data-activity-detail aria-live="polite">
+            Tap a day to see workout count.
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 fitness-muted small gap-2">
+            <span>{{ summary.activity_calendar.requested_start|date:'M d' }} → Today</span>
+            <span class="gh-activity-legend"><span>Less</span><i class="level-0"></i><i class="level-1"></i><i class="level-2"></i><i class="level-3"></i><i class="level-4"></i><span>More</span></span>
+            <span>{{ summary.activity_range_active_days }} active day{{ summary.activity_range_active_days|pluralize }} in range</span>
           </div>
         </article>
       </div>
@@ -130,4 +197,39 @@
     </div>
   </div>
 </section>
+
+<script>
+  (function () {
+    var map = document.querySelector('[data-activity-map]');
+    var detail = document.querySelector('[data-activity-detail]');
+    if (!map || !detail) return;
+
+    function showDay(cell) {
+      var count = Number(cell.dataset.count || 0);
+      var date = cell.dataset.date || 'Selected day';
+      var weekday = cell.dataset.weekday || '';
+      var word = count === 1 ? 'workout' : 'workouts';
+      detail.innerHTML = '<strong>' + date + '</strong>' +
+        (weekday ? ' · ' + weekday : '') +
+        '<span>' + count + ' ' + word + ' logged</span>';
+      map.querySelectorAll('.gh-activity-cell.selected').forEach(function (item) {
+        item.classList.remove('selected');
+      });
+      cell.classList.add('selected');
+    }
+
+    map.addEventListener('click', function (event) {
+      var cell = event.target.closest('.gh-activity-cell');
+      if (cell) showDay(cell);
+    });
+
+    map.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var cell = event.target.closest('.gh-activity-cell');
+      if (!cell) return;
+      event.preventDefault();
+      showDay(cell);
+    });
+  })();
+</script>
 {% endblock %}

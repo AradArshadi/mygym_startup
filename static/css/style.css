@@ -527,3 +527,397 @@ body{background:
   .fitness-list-row { align-items: flex-start; flex-direction: column; }
   .fitness-shell { padding-top: 1.4rem!important; }
 }
+
+/* v0.9.3.1 — theme system, mobile logout accessibility and orange activity calendar */
+html[data-theme="dark"] {
+  --bg-main: #0f1014;
+  --bg-soft: #17191f;
+  --text-main: #f8f4ee;
+  --text-muted: rgba(248,244,238,.64);
+  --glass: rgba(24,25,31,.72);
+  --glass-strong: rgba(30,32,40,.86);
+  --glass-border: rgba(255,255,255,.10);
+  --line: rgba(255,255,255,.10);
+  --shadow: 0 34px 90px rgba(0,0,0,.38);
+  --shadow-soft: 0 20px 55px rgba(0,0,0,.28);
+}
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at top left, rgba(255,90,31,.16), transparent 32rem),
+    radial-gradient(circle at top right, rgba(255,255,255,.055), transparent 28rem),
+    var(--bg-main);
+  color: var(--text-main);
+}
+html[data-theme="dark"] .mg-navbar,
+html[data-theme="dark"] .mg-footer {
+  background: rgba(15,16,20,.78);
+  border-color: rgba(255,255,255,.08);
+}
+html[data-theme="dark"] .brand-mark { color: #fff!important; }
+html[data-theme="dark"] .navbar .nav-link { color: rgba(255,255,255,.72); }
+html[data-theme="dark"] .navbar .nav-link:hover { color: #fff; }
+html[data-theme="dark"] .soft-toggler,
+html[data-theme="dark"] .btn-ghost,
+html[data-theme="dark"] .neo-panel,
+html[data-theme="dark"] .neo-gym-card,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .notification-card,
+html[data-theme="dark"] .glass-light {
+  background: rgba(24,25,31,.78);
+  border-color: rgba(255,255,255,.10);
+  color: #fff;
+}
+html[data-theme="dark"] .chip,
+html[data-theme="dark"] .price-chip,
+html[data-theme="dark"] .pill-label {
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.12);
+  color: #fff;
+}
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .auth-form input,
+html[data-theme="dark"] .auth-form select,
+html[data-theme="dark"] .form-card input,
+html[data-theme="dark"] .form-card textarea,
+html[data-theme="dark"] .form-card select,
+html[data-theme="dark"] .compact-form input,
+html[data-theme="dark"] .compact-form textarea,
+html[data-theme="dark"] .compact-form select {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+}
+html[data-theme="dark"] .neo-table thead th { background: rgba(255,255,255,.06); color: rgba(255,255,255,.68); }
+html[data-theme="dark"] .empty-state { background: rgba(255,255,255,.06); color: rgba(255,255,255,.64); border-color: rgba(255,255,255,.16); }
+
+.mg-theme-toggle {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,.78);
+  color: #151515;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  transition: transform .18s ease, background .18s ease;
+}
+.mg-theme-toggle:hover { transform: translateY(-1px); }
+html[data-theme="dark"] .mg-theme-toggle { background: rgba(255,255,255,.09); color: #fff; border-color: rgba(255,255,255,.12); }
+.theme-icon { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity .18s ease, transform .18s ease; font-weight: 900; }
+html[data-theme="light"] .theme-icon-light { opacity: 0; transform: translateY(12px); }
+html[data-theme="light"] .theme-icon-dark { opacity: 1; transform: translateY(0); }
+html[data-theme="dark"] .theme-icon-light { opacity: 1; transform: translateY(0); }
+html[data-theme="dark"] .theme-icon-dark { opacity: 0; transform: translateY(-12px); }
+
+/* Fitness pages now support both modes without losing the premium mobile-app mood. */
+html[data-theme="light"] .fitness-shell {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255,90,31,.16), transparent 26rem),
+    linear-gradient(180deg, #fff7ef 0%, #f5f1ea 100%);
+  color: #171717;
+}
+html[data-theme="light"] .fitness-hero-card,
+html[data-theme="light"] .fitness-card,
+html[data-theme="light"] .fitness-stat-tile {
+  background: rgba(255,255,255,.78);
+  border-color: rgba(21,21,21,.075);
+  color: #171717;
+  box-shadow: 0 24px 70px rgba(24,18,12,.10);
+}
+html[data-theme="light"] .fitness-hero-card h1,
+html[data-theme="light"] .fitness-page-heading h1,
+html[data-theme="light"] .fitness-card h2,
+html[data-theme="light"] .fitness-list-row strong,
+html[data-theme="light"] .fitness-stat-tile strong,
+html[data-theme="light"] .fitness-mini-gym strong { color: #171717; }
+html[data-theme="light"] .fitness-date,
+html[data-theme="light"] .fitness-card-label { color: rgba(21,21,21,.46); }
+html[data-theme="light"] .fitness-muted,
+html[data-theme="light"] .fitness-list-row p,
+html[data-theme="light"] .fitness-stat-tile span,
+html[data-theme="light"] .fitness-mini-gym span { color: rgba(21,21,21,.58)!important; }
+html[data-theme="light"] .fitness-chip,
+html[data-theme="light"] .fitness-mini-gym {
+  background: rgba(21,21,21,.045);
+  border-color: rgba(21,21,21,.08);
+  color: #171717;
+}
+html[data-theme="light"] .fitness-link { color: #cf430f; }
+html[data-theme="light"] .fitness-list-row { border-color: rgba(21,21,21,.08); }
+html[data-theme="light"] .fitness-empty { color: rgba(21,21,21,.52); background: rgba(21,21,21,.035); border-color: rgba(21,21,21,.13); }
+html[data-theme="light"] .fitness-form label { color: rgba(21,21,21,.76); }
+html[data-theme="light"] .fitness-form input,
+html[data-theme="light"] .fitness-form textarea,
+html[data-theme="light"] .fitness-form select {
+  background: rgba(255,255,255,.86);
+  color: #171717;
+  border-color: rgba(21,21,21,.10);
+}
+html[data-theme="light"] .fitness-ring {
+  background:
+    radial-gradient(circle, rgba(255,255,255,.88) 57%, transparent 59%),
+    conic-gradient(var(--primary) calc(var(--progress) * 1%), rgba(21,21,21,.10) 0);
+  color: #171717;
+}
+
+.fitness-calendar-wrap {
+  width: 100%;
+  overflow-x: auto;
+  padding: .15rem .1rem .35rem;
+  scrollbar-width: thin;
+}
+.fitness-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--activity-columns, 10), minmax(14px, 1fr));
+  gap: .42rem;
+  width: 100%;
+  min-width: min(100%, calc(var(--activity-columns, 10) * 20px));
+  max-width: 760px;
+}
+.fitness-calendar-grid.range-360 { max-width: 980px; }
+.activity-cell {
+  aspect-ratio: 1;
+  border-radius: .42rem;
+  background: rgba(255,90,31,.055);
+  border: 1px solid rgba(255,90,31,.12);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+.activity-cell.level-1 { background: rgba(255,90,31,.28); border-color: rgba(255,90,31,.34); }
+.activity-cell.level-2 { background: rgba(255,90,31,.58); border-color: rgba(255,90,31,.66); }
+.activity-cell.level-3 { background: #ff5a1f; border-color: rgba(255,255,255,.32); box-shadow: 0 0 18px rgba(255,90,31,.22); }
+.activity-cell.today { outline: 2px solid rgba(255,255,255,.88); outline-offset: 2px; }
+.activity-cell.start-cell { box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+html[data-theme="light"] .activity-cell.today { outline-color: rgba(21,21,21,.72); }
+.activity-range-switch {
+  display: inline-flex;
+  gap: .25rem;
+  padding: .28rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.10);
+}
+.activity-range-switch a {
+  color: rgba(255,255,255,.62);
+  font-size: .76rem;
+  font-weight: 950;
+  padding: .48rem .68rem;
+  border-radius: 999px;
+}
+.activity-range-switch a.active {
+  color: #fff;
+  background: var(--primary);
+  box-shadow: 0 10px 25px rgba(255,90,31,.24);
+}
+html[data-theme="light"] .activity-range-switch { background: rgba(21,21,21,.045); border-color: rgba(21,21,21,.08); }
+html[data-theme="light"] .activity-range-switch a { color: rgba(21,21,21,.56); }
+html[data-theme="light"] .activity-range-switch a.active { color: #fff; }
+.activity-legend { display: inline-flex; align-items: center; gap: .28rem; }
+.activity-legend i {
+  display: inline-block;
+  width: .74rem;
+  height: .74rem;
+  border-radius: .22rem;
+  border: 1px solid rgba(255,90,31,.2);
+}
+.activity-legend .level-0 { background: rgba(255,90,31,.055); }
+.activity-legend .level-1 { background: rgba(255,90,31,.28); }
+.activity-legend .level-2 { background: rgba(255,90,31,.58); }
+.activity-legend .level-3 { background: #ff5a1f; }
+.profile-actions-card .btn-outline-light { border-color: rgba(255,255,255,.20); }
+html[data-theme="light"] .profile-actions-card .btn-outline-light { border-color: rgba(21,21,21,.14); color: #171717; }
+
+@media (max-width: 768px) {
+  .mg-theme-toggle { width: 42px; height: 42px; }
+  .fitness-calendar-grid { gap: .32rem; min-width: calc(var(--activity-columns, 10) * 17px); }
+  .fitness-calendar-grid.range-120,
+  .fitness-calendar-grid.range-360 { min-width: calc(var(--activity-columns, 10) * 16px); }
+}
+
+/* v0.9.3.2 — GitHub-style activity map and safer mobile navigation */
+.fitness-activity-card {
+  overflow: hidden;
+}
+.gh-activity-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: .2rem .1rem .45rem;
+  scrollbar-width: thin;
+}
+.gh-activity-calendar {
+  --cell: 13px;
+  --gap: 4px;
+  display: grid;
+  grid-template-columns: 36px max-content;
+  grid-template-rows: 18px max-content;
+  column-gap: 8px;
+  row-gap: 6px;
+  width: max-content;
+  min-width: min(100%, calc(36px + (var(--weeks) * (var(--cell) + var(--gap)))));
+}
+.gh-month-row {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--weeks), var(--cell));
+  gap: var(--gap);
+  color: rgba(255,255,255,.62);
+  font-size: .72rem;
+  font-weight: 800;
+  align-items: center;
+}
+.gh-weekday-row {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  gap: var(--gap);
+  align-items: center;
+  justify-items: end;
+  color: rgba(255,255,255,.55);
+  font-size: .68rem;
+  font-weight: 850;
+  padding-right: 2px;
+}
+.gh-activity-grid {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, var(--cell));
+  grid-auto-columns: var(--cell);
+  gap: var(--gap);
+}
+.gh-activity-cell {
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 3px;
+  background: rgba(255,90,31,.075);
+  border: 1px solid rgba(255,90,31,.13);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.018);
+}
+.gh-activity-cell.muted {
+  opacity: .35;
+}
+.gh-activity-cell.level-1 { background: rgba(255,90,31,.30); border-color: rgba(255,90,31,.34); opacity: 1; }
+.gh-activity-cell.level-2 { background: rgba(255,90,31,.55); border-color: rgba(255,90,31,.62); opacity: 1; }
+.gh-activity-cell.level-3 { background: rgba(255,90,31,.78); border-color: rgba(255,90,31,.82); opacity: 1; }
+.gh-activity-cell.level-4 { background: #ff5a1f; border-color: rgba(255,255,255,.30); box-shadow: 0 0 12px rgba(255,90,31,.28); opacity: 1; }
+.gh-activity-cell.today {
+  outline: 2px solid rgba(255,255,255,.92);
+  outline-offset: 2px;
+  opacity: 1;
+}
+.gh-activity-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: .28rem;
+}
+.gh-activity-legend i {
+  display: inline-block;
+  width: .75rem;
+  height: .75rem;
+  border-radius: 3px;
+  border: 1px solid rgba(255,90,31,.16);
+}
+.gh-activity-legend .level-0 { background: rgba(255,90,31,.075); }
+.gh-activity-legend .level-1 { background: rgba(255,90,31,.30); }
+.gh-activity-legend .level-2 { background: rgba(255,90,31,.55); }
+.gh-activity-legend .level-3 { background: rgba(255,90,31,.78); }
+.gh-activity-legend .level-4 { background: #ff5a1f; }
+html[data-theme="light"] .gh-month-row,
+html[data-theme="light"] .gh-weekday-row { color: rgba(21,21,21,.56); }
+html[data-theme="light"] .gh-activity-cell { background: rgba(255,90,31,.10); border-color: rgba(255,90,31,.16); }
+html[data-theme="light"] .gh-activity-cell.level-1 { background: rgba(255,90,31,.28); }
+html[data-theme="light"] .gh-activity-cell.level-2 { background: rgba(255,90,31,.50); }
+html[data-theme="light"] .gh-activity-cell.level-3 { background: rgba(255,90,31,.72); }
+html[data-theme="light"] .gh-activity-cell.level-4 { background: #ff5a1f; }
+html[data-theme="light"] .gh-activity-cell.today { outline-color: rgba(21,21,21,.82); }
+@media (max-width: 768px) {
+  body { padding-bottom: calc(98px + env(safe-area-inset-bottom)); }
+  .navbar .navbar-toggler { display: block; }
+  .navbar .navbar-collapse.show,
+  .navbar .navbar-collapse.collapsing { display: block !important; }
+  .navbar .navbar-collapse:not(.show):not(.collapsing) { display: none !important; }
+  .mg-mobile-tabbar {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 2200;
+    width: min(calc(100vw - 16px), 430px);
+  }
+  .gh-activity-calendar { --cell: 12px; --gap: 3px; }
+  .gh-activity-scroll { margin-left: -.25rem; margin-right: -.25rem; padding-left: .25rem; padding-right: .25rem; }
+}
+
+/* v0.9.3.3 — interactive GitHub-style activity map polish */
+.gh-month-row {
+  grid-template-columns: repeat(var(--weeks), calc(var(--cell) + var(--gap)));
+  gap: 0;
+  overflow: visible;
+}
+.gh-month-row span {
+  display: block;
+  min-width: 2.35rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+.gh-activity-cell {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  line-height: 1;
+  transition: transform .14s ease, outline-color .14s ease, box-shadow .14s ease, background-color .14s ease;
+}
+.gh-activity-cell:hover,
+.gh-activity-cell:focus-visible {
+  transform: scale(1.18);
+  outline: 2px solid rgba(255,255,255,.72);
+  outline-offset: 2px;
+  z-index: 3;
+}
+.gh-activity-cell.selected {
+  outline: 2px solid rgba(255,90,31,.95);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255,90,31,.16), 0 0 18px rgba(255,90,31,.28);
+  opacity: 1;
+}
+.gh-activity-cell.today.selected {
+  outline-color: #fff;
+}
+.gh-activity-detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-top: .8rem;
+  padding: .72rem .9rem;
+  border-radius: 18px;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.09);
+  color: rgba(255,255,255,.72);
+  font-size: .84rem;
+  font-weight: 750;
+}
+.gh-activity-detail strong {
+  color: rgba(255,255,255,.94);
+  font-weight: 900;
+}
+.gh-activity-detail span {
+  color: rgba(255,90,31,.95);
+  font-weight: 900;
+}
+html[data-theme="light"] .gh-activity-cell:hover,
+html[data-theme="light"] .gh-activity-cell:focus-visible { outline-color: rgba(21,21,21,.55); }
+html[data-theme="light"] .gh-activity-cell.selected { outline-color: rgba(255,90,31,.96); box-shadow: 0 0 0 4px rgba(255,90,31,.16); }
+html[data-theme="light"] .gh-activity-detail { background: rgba(21,21,21,.035); border-color: rgba(21,21,21,.075); color: rgba(21,21,21,.62); }
+html[data-theme="light"] .gh-activity-detail strong { color: rgba(21,21,21,.88); }
+@media (max-width: 768px) {
+  .gh-activity-detail { align-items: flex-start; flex-direction: column; gap: .22rem; }
+  .gh-month-row span { min-width: 2rem; font-size: .68rem; }
+}
