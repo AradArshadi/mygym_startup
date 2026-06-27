@@ -407,3 +407,47 @@ python manage.py test apps.bookings
 python manage.py show_email_config
 python manage.py email_probe your-email@example.com --template
 ```
+
+## v0.9.3 — Fitness Home Rebase
+
+This release starts the transition from a pure gym marketplace into a fitness lifestyle platform.
+
+### Product direction
+
+myGym is now moving toward:
+
+- Marketplace for gyms and sport facilities
+- Customer fitness home
+- Owner operating dashboard
+- Workout tracking and weekly consistency
+- Future social feed, friends, DMs, and marketplace modules
+
+### Added in v0.9.3
+
+- New `apps.fitness` app
+- Customer Fitness Home at `/fitness/`
+- Workout logging (`WorkoutLog`)
+- Weekly workout goals (`WorkoutGoal`)
+- Weekly streak/consistency service
+- Training activity grid
+- Mobile bottom navigation for customer mobile view
+- Profile hub for sessions, plans, subscriptions, workouts, saved gyms, and reviews
+- Discover placeholder for future posts/videos/social layer
+- Chat placeholder for future DMs
+- Role-aware login redirect
+
+### Run after pulling
+
+```bash
+python manage.py migrate
+python manage.py test apps.bookings
+python manage.py test apps.fitness
+python manage.py check
+```
+
+### Suggested release tag
+
+```bash
+git tag -a v0.9.3 -m "myGym v0.9.3 — Fitness Home Rebase"
+git push origin main --tags
+```

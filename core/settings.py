@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'apps.reviews',
     'apps.analytics',
     'apps.dashboard',
+    'apps.fitness',
     'apps.notifications',
     'apps.controlpanel',
     'apps.emails',
@@ -163,7 +164,7 @@ if RUNNING_TESTS:
     EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
     PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 
-LOGIN_REDIRECT_URL = 'gym_list'
+LOGIN_REDIRECT_URL = 'fitness_home'
 LOGOUT_REDIRECT_URL = 'gym_list'
 
 # Production security switches. Defaults remain local-dev friendly unless ENVIRONMENT=production.

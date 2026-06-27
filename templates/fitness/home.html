@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Fitness Home · myGym{% endblock %}
+{% block content %}
+<section class="fitness-shell fitness-home-shell py-4 py-lg-5">
+  <div class="container">
+    <div class="fitness-hero-card mb-4">
+      <div>
+        <p class="fitness-date mb-1">Fitness Home</p>
+        <h1>Nice work today{% if user.first_name %}, {{ user.first_name }}{% else %}, {{ user.username }}{% endif %}</h1>
+        <p class="fitness-muted mb-0">Your sessions, access pass, workout progress, and weekly consistency in one calm command center.</p>
+      </div>
+      <div class="fitness-hero-actions">
+        <a href="{% url 'log_workout' %}" class="btn btn-light rounded-pill px-4">Log workout</a>
+        <a href="{% url 'gym_list' %}" class="btn btn-outline-light rounded-pill px-4">Explore gyms</a>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-7">
+        <article class="fitness-card upnext-card h-100">
+          <div class="fitness-card-label">Up next</div>
+          {% if upcoming_session %}
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-center">
+              <div>
+                <h2>{{ upcoming_session.gym.name }}</h2>
+                <p class="fitness-muted mb-2">{{ upcoming_session.start_time|date:'D, d M · H:i' }}{% if upcoming_session.booking.plan %} · {{ upcoming_session.booking.plan.title }}{% endif %}</p>
+                <span class="fitness-chip">Session ready</span>
+              </div>
+              <a class="btn btn-primary rounded-pill px-4" href="{% url 'session_detail' upcoming_session.id %}">Open QR</a>
+            </div>
+          {% else %}
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-center">
+              <div>
+                <h2>No session scheduled</h2>
+                <p class="fitness-muted mb-2">Find a gym, request a visit, or log your own workout for today.</p>
+                <span class="fitness-chip">Ready when you are</span>
+              </div>
+              <a class="btn btn-primary rounded-pill px-4" href="{% url 'gym_list' %}">Book a gym</a>
+            </div>
+          {% endif %}
+        </article>
+      </div>
+      <div class="col-lg-5">
+        <article class="fitness-card h-100">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <div class="fitness-card-label">Weekly consistency</div>
+              <h2>{{ summary.week_count }}/{{ summary.goal.weekly_target }}</h2>
+              <p class="fitness-muted mb-0">workouts this week · {{ summary.active_days }} active day{{ summary.active_days|pluralize }}</p>
+            </div>
+            <div class="fitness-ring" style="--progress: {{ summary.progress_percent }};"><span>{{ summary.progress_percent }}%</span></div>
+          </div>
+          <div class="fitness-progress-track mt-4"><span style="width: {{ summary.progress_percent }}%"></span></div>
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <span class="fitness-chip">🔥 {{ summary.streak }} week streak</span>
+            <a class="fitness-link" href="{% url 'update_workout_goal' %}">Edit goal</a>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-8">
+        <article class="fitness-card">
+          <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <div class="fitness-card-label">Training activity</div>
+              <h2 class="mb-0">{{ summary.total_workouts }} workouts</h2>
+            </div>
+            <span class="fitness-muted">{{ summary.total_minutes }} min logged</span>
+          </div>
+          <div class="fitness-activity-grid" aria-label="Workout activity grid">
+            {% for day in summary.activity_grid %}
+              <span class="activity-cell level-{{ day.intensity }}{% if day.is_today %} today{% endif %}" title="{{ day.date|date:'M d' }} · {{ day.count }} workout{{ day.count|pluralize }}"></span>
+            {% endfor %}
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3 fitness-muted small">
+            <span>Less</span><span>More</span><span>{{ summary.active_days }} active day{{ summary.active_days|pluralize }} this week</span>
+          </div>
+        </article>
+      </div>
+      <div class="col-lg-4">
+        <article class="fitness-card h-100">
+          <div class="fitness-card-label">Access pass</div>
+          {% if active_subscription %}
+            <h2>{{ active_subscription.gym.name }}</h2>
+            <p class="fitness-muted">{{ active_subscription.plan.title|default:'Membership' }} · valid until {{ active_subscription.end_date|date:'d M Y' }}</p>
+            <a class="btn btn-light rounded-pill" href="{% url 'my_memberships' %}">Show pass</a>
+          {% else %}
+            <h2>No active pass</h2>
+            <p class="fitness-muted">When a membership booking is confirmed, your QR Access Pass appears here.</p>
+            <a class="btn btn-light rounded-pill" href="{% url 'gym_list' %}">Find a plan</a>
+          {% endif %}
+        </article>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <article class="fitness-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div><div class="fitness-card-label">Recent workouts</div><h2 class="mb-0">History</h2></div>
+            <a href="{% url 'workout_history' %}" class="fitness-link">View all</a>
+          </div>
+          {% for workout in recent_workouts %}
+            <div class="fitness-list-row">
+              <div><strong>{{ workout.title }}</strong><p>{{ workout.logged_at|date:'d M · H:i' }} · {{ workout.duration_minutes }} min{% if workout.workout_type %} · {{ workout.workout_type }}{% endif %}</p></div>
+            </div>
+          {% empty %}
+            <div class="fitness-empty">No workouts logged yet. Start with one simple entry.</div>
+          {% endfor %}
+        </article>
+      </div>
+      <div class="col-lg-6">
+        <article class="fitness-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div><div class="fitness-card-label">Recommended</div><h2 class="mb-0">Gyms to explore</h2></div>
+            <a href="{% url 'gym_list' %}" class="fitness-link">Explore</a>
+          </div>
+          {% for gym in recommended_gyms %}
+            <div class="fitness-list-row">
+              <div><strong>{{ gym.name }}</strong><p>{{ gym.city }} · from €{{ gym.starting_price }}</p></div>
+              <a class="btn btn-sm btn-light rounded-pill" href="{% url 'gym_detail' gym.slug %}">Open</a>
+            </div>
+          {% empty %}
+            <div class="fitness-empty">No approved gyms yet.</div>
+          {% endfor %}
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

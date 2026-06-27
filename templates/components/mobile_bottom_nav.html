@@ -1,0 +1,17 @@
+{% if user.is_authenticated and user.role == 'CUSTOMER' %}
+<nav class="mg-mobile-tabbar" aria-label="Customer mobile navigation">
+  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'fitness_home' %}active{% endif %}" href="{% url 'fitness_home' %}">
+    <span class="mg-mobile-tab-icon">⌂</span><small>Home</small>
+  </a>
+  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'discover' or request.resolver_match.url_name == 'gym_list' %}active{% endif %}" href="{% url 'discover' %}">
+    <span class="mg-mobile-tab-icon">◌</span><small>Discover</small>
+  </a>
+  <a class="mg-mobile-tab-fab {% if request.resolver_match.url_name == 'log_workout' %}active{% endif %}" href="{% url 'log_workout' %}" aria-label="Log workout">＋</a>
+  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'chat_home' %}active{% endif %}" href="{% url 'chat_home' %}">
+    <span class="mg-mobile-tab-icon">☰</span><small>Chat</small>
+  </a>
+  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'profile_hub' %}active{% endif %}" href="{% url 'profile_hub' %}">
+    <span class="mg-mobile-tab-icon">◉</span><small>Profile</small>
+  </a>
+</nav>
+{% endif %}

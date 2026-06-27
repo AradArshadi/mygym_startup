@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Profile · myGym{% endblock %}
+{% block content %}
+<section class="fitness-shell py-5">
+  <div class="container">
+    <div class="fitness-page-heading mb-4">
+      <p class="fitness-date">Profile</p>
+      <h1>{{ user.get_full_name|default:user.username }}</h1>
+      <p class="fitness-muted">Your fitness identity: sessions, plans, workouts, streaks, saved gyms, and reviews.</p>
+    </div>
+    <div class="row g-4 mb-4">
+      <div class="col-6 col-lg-3"><div class="fitness-stat-tile"><strong>{{ summary.total_workouts }}</strong><span>Workouts</span></div></div>
+      <div class="col-6 col-lg-3"><div class="fitness-stat-tile"><strong>{{ summary.week_count }}/{{ summary.goal.weekly_target }}</strong><span>This week</span></div></div>
+      <div class="col-6 col-lg-3"><div class="fitness-stat-tile"><strong>{{ summary.streak }}</strong><span>Week streak</span></div></div>
+      <div class="col-6 col-lg-3"><div class="fitness-stat-tile"><strong>{{ summary.total_minutes }}</strong><span>Minutes</span></div></div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <article class="fitness-card">
+          <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">Sessions</h2><a class="fitness-link" href="{% url 'my_sessions' %}">Open</a></div>
+          {% for session in sessions %}<div class="fitness-list-row"><div><strong>{{ session.gym.name }}</strong><p>{{ session.start_time|date:'d M Y · H:i' }} · {{ session.status }}</p></div></div>{% empty %}<div class="fitness-empty">No sessions yet.</div>{% endfor %}
+        </article>
+      </div>
+      <div class="col-lg-6">
+        <article class="fitness-card">
+          <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">Plans & Access Passes</h2><a class="fitness-link" href="{% url 'my_memberships' %}">Open</a></div>
+          {% for subscription in subscriptions %}<div class="fitness-list-row"><div><strong>{{ subscription.gym.name }}</strong><p>{{ subscription.plan.title|default:'Membership' }} · {{ subscription.status }} until {{ subscription.end_date|date:'d M Y' }}</p></div></div>{% empty %}<div class="fitness-empty">No memberships yet.</div>{% endfor %}
+        </article>
+      </div>
+      <div class="col-lg-6">
+        <article class="fitness-card">
+          <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">Saved gyms</h2><a class="fitness-link" href="{% url 'gym_list' %}">Explore</a></div>
+          {% for favorite in favorites %}<div class="fitness-list-row"><div><strong>{{ favorite.gym.name }}</strong><p>{{ favorite.gym.city }} · from €{{ favorite.gym.starting_price }}</p></div><a class="btn btn-sm btn-light rounded-pill" href="{% url 'gym_detail' favorite.gym.slug %}">Open</a></div>{% empty %}<div class="fitness-empty">No saved gyms yet.</div>{% endfor %}
+        </article>
+      </div>
+      <div class="col-lg-6">
+        <article class="fitness-card">
+          <div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">Reviews</h2></div>
+          {% for review in reviews %}<div class="fitness-list-row"><div><strong>{{ review.gym.name }} · {{ review.rating }}/5</strong><p>{{ review.comment|truncatewords:18 }}</p></div></div>{% empty %}<div class="fitness-empty">No reviews yet.</div>{% endfor %}
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
