@@ -131,6 +131,11 @@ def chat_home(request):
 
 
 @login_required
+def more_menu(request):
+    return render(request, 'fitness/more.html')
+
+
+@login_required
 def profile_hub(request):
     refresh_due_membership_qrs_for_user(request.user)
     activity_days = normalize_activity_days(request.GET.get('activity_days'))

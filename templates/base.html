@@ -43,8 +43,10 @@
             <li class="nav-item"><a class="btn btn-primary rounded-pill px-4 w-100 w-lg-auto" href="{% url 'owner_gym_create' %}">Add Gym</a></li>
           {% elif user.role == 'CUSTOMER' %}
             <li class="nav-item"><a class="nav-link" href="{% url 'fitness_home' %}">Home</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'discover' %}">Discover</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'profile_hub' %}">Profile</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'gym_list' %}">Explore</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'log_workout' %}">Log workout</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'profile_hub' %}">MyGym</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'more_menu' %}">More</a></li>
           {% endif %}
           <li class="nav-item">
             <form action="{% url 'logout' %}" method="post" class="d-inline">

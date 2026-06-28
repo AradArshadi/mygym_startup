@@ -71,7 +71,7 @@ class FitnessHomeTests(TestCase):
 
     def test_mobile_nav_urls_are_available(self):
         self.client.force_login(self.customer)
-        for name in ['fitness_home', 'discover', 'log_workout', 'chat_home', 'profile_hub']:
+        for name in ['fitness_home', 'gym_list', 'log_workout', 'profile_hub', 'more_menu', 'discover', 'chat_home']:
             response = self.client.get(reverse(name))
             self.assertIn(response.status_code, [200, 302])
 
@@ -99,10 +99,11 @@ class FitnessThemeAndCalendarTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Past 30 days')
 
-    def test_profile_contains_mobile_logout_and_theme_toggle(self):
+    def test_mygym_contains_mobile_logout_and_theme_toggle(self):
         self.client.force_login(self.customer)
         response = self.client.get(reverse('profile_hub'))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'MyGym')
         self.assertContains(response, 'Logout')
         self.assertContains(response, 'data-theme-toggle')
 
@@ -159,3 +160,32 @@ class FitnessActivityMapRegressionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'navbar-toggler')
         self.assertContains(response, 'mg-mobile-tabbar')
+
+
+class FitnessClarityUXTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.customer = self.User.objects.create_user(
+            username='clarity_customer',
+            email='clarity@example.com',
+            password='pass12345',
+            role='CUSTOMER',
+        )
+
+    def test_mobile_nav_uses_current_stage_labels(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse('fitness_home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Explore')
+        self.assertContains(response, 'MyGym')
+        self.assertContains(response, 'More')
+        self.assertNotContains(response, '<small>Chat</small>')
+        self.assertNotContains(response, '<small>Discover</small>')
+
+    def test_more_menu_keeps_future_features_out_of_primary_nav(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse('more_menu'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Discover preview')
+        self.assertContains(response, 'Chat preview')
+        self.assertContains(response, 'Logout')

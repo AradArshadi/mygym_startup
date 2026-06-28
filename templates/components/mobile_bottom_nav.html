@@ -3,15 +3,15 @@
   <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'fitness_home' %}active{% endif %}" href="{% url 'fitness_home' %}">
     <span class="mg-mobile-tab-icon">⌂</span><small>Home</small>
   </a>
-  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'discover' or request.resolver_match.url_name == 'gym_list' %}active{% endif %}" href="{% url 'discover' %}">
-    <span class="mg-mobile-tab-icon">◌</span><small>Discover</small>
+  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'gym_list' or request.resolver_match.url_name == 'gym_detail' %}active{% endif %}" href="{% url 'gym_list' %}">
+    <span class="mg-mobile-tab-icon">⌕</span><small>Explore</small>
   </a>
   <a class="mg-mobile-tab-fab {% if request.resolver_match.url_name == 'log_workout' %}active{% endif %}" href="{% url 'log_workout' %}" aria-label="Log workout">＋</a>
-  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'chat_home' %}active{% endif %}" href="{% url 'chat_home' %}">
-    <span class="mg-mobile-tab-icon">☰</span><small>Chat</small>
+  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'profile_hub' or request.resolver_match.url_name == 'my_sessions' or request.resolver_match.url_name == 'my_memberships' or request.resolver_match.url_name == 'workout_history' %}active{% endif %}" href="{% url 'profile_hub' %}">
+    <span class="mg-mobile-tab-icon">◆</span><small>MyGym</small>
   </a>
-  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'profile_hub' %}active{% endif %}" href="{% url 'profile_hub' %}">
-    <span class="mg-mobile-tab-icon">◉</span><small>Profile</small>
+  <a class="mg-mobile-tab {% if request.resolver_match.url_name == 'more_menu' or request.resolver_match.url_name == 'discover' or request.resolver_match.url_name == 'chat_home' or request.resolver_match.url_name == 'notification_list' %}active{% endif %}" href="{% url 'more_menu' %}">
+    <span class="mg-mobile-tab-icon">☰</span><small>More</small>
   </a>
 </nav>
 {% endif %}

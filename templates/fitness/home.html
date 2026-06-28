@@ -1,53 +1,41 @@
 {% extends 'base.html' %}
-{% block title %}Fitness Home · myGym
-<script>
-  (function () {
-    var map = document.querySelector('[data-activity-map]');
-    var detail = document.querySelector('[data-activity-detail]');
-    if (!map || !detail) return;
-
-    function showDay(cell) {
-      var count = Number(cell.dataset.count || 0);
-      var date = cell.dataset.date || 'Selected day';
-      var weekday = cell.dataset.weekday || '';
-      var word = count === 1 ? 'workout' : 'workouts';
-      detail.innerHTML = '<strong>' + date + '</strong>' +
-        (weekday ? ' · ' + weekday : '') +
-        '<span>' + count + ' ' + word + ' logged</span>';
-      map.querySelectorAll('.gh-activity-cell.selected').forEach(function (item) {
-        item.classList.remove('selected');
-      });
-      cell.classList.add('selected');
-    }
-
-    map.addEventListener('click', function (event) {
-      var cell = event.target.closest('.gh-activity-cell');
-      if (cell) showDay(cell);
-    });
-
-    map.addEventListener('keydown', function (event) {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      var cell = event.target.closest('.gh-activity-cell');
-      if (!cell) return;
-      event.preventDefault();
-      showDay(cell);
-    });
-  })();
-</script>
-{% endblock %}
+{% block title %}Fitness Home · myGym{% endblock %}
 {% block content %}
 <section class="fitness-shell fitness-home-shell py-4 py-lg-5">
   <div class="container">
     <div class="fitness-hero-card mb-4">
       <div>
-        <p class="fitness-date mb-1">Fitness Home</p>
+        <p class="fitness-date mb-1">Home</p>
         <h1>Nice work today{% if user.first_name %}, {{ user.first_name }}{% else %}, {{ user.username }}{% endif %}</h1>
-        <p class="fitness-muted mb-0">Your sessions, access pass, workout progress, and weekly consistency in one calm command center.</p>
+        <p class="fitness-muted mb-0">Start here: book gyms, open your access pass, log workouts, and track your weekly consistency.</p>
       </div>
       <div class="fitness-hero-actions">
         <a href="{% url 'log_workout' %}" class="btn btn-light rounded-pill px-4">Log workout</a>
         <a href="{% url 'gym_list' %}" class="btn btn-outline-light rounded-pill px-4">Explore gyms</a>
       </div>
+    </div>
+
+    <div class="ux-start-grid mb-4">
+      <a class="ux-start-card" href="{% url 'gym_list' %}">
+        <span class="ux-start-icon">⌕</span>
+        <strong>Explore gyms</strong>
+        <small>Find gyms, plans, and sport facilities.</small>
+      </a>
+      <a class="ux-start-card" href="{% url 'my_memberships' %}">
+        <span class="ux-start-icon">▣</span>
+        <strong>Access pass</strong>
+        <small>Open your active membership QR.</small>
+      </a>
+      <a class="ux-start-card" href="{% url 'log_workout' %}">
+        <span class="ux-start-icon">＋</span>
+        <strong>Log workout</strong>
+        <small>Update progress and streaks.</small>
+      </a>
+      <a class="ux-start-card" href="{% url 'profile_hub' %}">
+        <span class="ux-start-icon">◆</span>
+        <strong>MyGym</strong>
+        <small>Sessions, plans, workouts, saved gyms.</small>
+      </a>
     </div>
 
     <div class="row g-4 mb-4">
@@ -181,7 +169,7 @@
       <div class="col-lg-6">
         <article class="fitness-card">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <div><div class="fitness-card-label">Recommended</div><h2 class="mb-0">Gyms to explore</h2></div>
+            <div><div class="fitness-card-label">Marketplace</div><h2 class="mb-0">Gyms to explore</h2></div>
             <a href="{% url 'gym_list' %}" class="fitness-link">Explore</a>
           </div>
           {% for gym in recommended_gyms %}

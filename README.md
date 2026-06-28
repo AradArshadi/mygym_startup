@@ -408,7 +408,7 @@ python manage.py show_email_config
 python manage.py email_probe your-email@example.com --template
 ```
 
-## v0.9.3 — Fitness Home Rebase
+## v0.9.3.4 — Fitness Home Rebase
 
 This release starts the transition from a pure gym marketplace into a fitness lifestyle platform.
 
@@ -478,4 +478,12 @@ This hotfix improves the first `v0.9.3` Fitness Home experience:
 - Each selected day shows the workout count for that day.
 - Month labels no longer collide in short ranges.
 - Removed extra helper copy from the contribution map.
+- No database migration required.
+
+
+## v0.9.3.4 — Clarity UX Hotfix
+
+- Customer mobile nav is now Home / Explore / + / MyGym / More.
+- Future social/chat placeholders moved to More so the current product feels less confusing.
+- Home now has clearer start actions for exploring gyms, opening the access pass, logging workouts, and viewing MyGym.
 - No database migration required.

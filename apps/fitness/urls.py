@@ -10,4 +10,5 @@ urlpatterns = [
     path('discover/', views.discover, name='discover'),
     path('chat/', views.chat_home, name='chat_home'),
     path('profile/', views.profile_hub, name='profile_hub'),
+    path('more/', views.more_menu, name='more_menu'),
 ]

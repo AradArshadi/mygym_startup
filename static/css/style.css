@@ -921,3 +921,112 @@ html[data-theme="light"] .gh-activity-detail strong { color: rgba(21,21,21,.88);
   .gh-activity-detail { align-items: flex-start; flex-direction: column; gap: .22rem; }
   .gh-month-row span { min-width: 2rem; font-size: .68rem; }
 }
+
+
+/* v0.9.3.4 — clarity UX hotfix: current-stage navigation and clearer action hierarchy */
+.ux-start-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+.ux-start-card {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  min-height: 126px;
+  padding: 1.15rem;
+  border-radius: 28px;
+  text-decoration: none;
+  background: rgba(255,255,255,.075);
+  border: 1px solid rgba(255,255,255,.10);
+  color: #fff;
+  transition: transform .16s ease, background .16s ease, border-color .16s ease;
+}
+.ux-start-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,.115);
+  border-color: rgba(255,90,31,.32);
+  color: #fff;
+}
+.ux-start-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255,90,31,.16);
+  color: #ff7a43;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+.ux-start-card strong {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 950;
+}
+.ux-start-card small {
+  color: rgba(255,255,255,.58);
+  line-height: 1.35;
+  font-weight: 650;
+}
+.more-menu-list {
+  display: grid;
+  gap: .75rem;
+}
+.more-menu-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.05rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: rgba(255,255,255,.055);
+  color: #fff;
+  text-decoration: none;
+  text-align: left;
+}
+.more-menu-button {
+  font: inherit;
+  cursor: pointer;
+}
+.more-menu-item:hover {
+  color: #fff;
+  background: rgba(255,255,255,.095);
+  border-color: rgba(255,90,31,.26);
+}
+.more-menu-item span {
+  font-weight: 900;
+}
+.more-menu-item small {
+  color: rgba(255,255,255,.55);
+  font-weight: 650;
+  text-align: right;
+}
+html[data-theme="light"] .ux-start-card,
+html[data-theme="light"] .more-menu-item {
+  background: rgba(255,255,255,.78);
+  border-color: rgba(21,21,21,.08);
+  color: #171717;
+  box-shadow: 0 18px 55px rgba(24,18,12,.08);
+}
+html[data-theme="light"] .ux-start-card:hover,
+html[data-theme="light"] .more-menu-item:hover {
+  color: #171717;
+  background: rgba(255,255,255,.95);
+  border-color: rgba(255,90,31,.25);
+}
+html[data-theme="light"] .ux-start-card strong,
+html[data-theme="light"] .more-menu-item span { color: #171717; }
+html[data-theme="light"] .ux-start-card small,
+html[data-theme="light"] .more-menu-item small { color: rgba(21,21,21,.58); }
+@media (max-width: 992px) {
+  .ux-start-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 576px) {
+  .ux-start-grid { gap: .72rem; }
+  .ux-start-card { min-height: 116px; padding: .95rem; border-radius: 24px; }
+  .more-menu-item { align-items: flex-start; flex-direction: column; gap: .25rem; }
+  .more-menu-item small { text-align: left; }
+}
