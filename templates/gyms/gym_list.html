@@ -167,6 +167,13 @@
               {% endwith %}
               <span class="price-chip">from €{{ gym.starting_price }}</span>
             </a>
+            {% if user.is_authenticated %}
+              <form method="post" action="{% url 'toggle_favorite' gym.id %}" class="favorite-float-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="favorite-float-btn {% if gym.id in favorite_ids %}is-active{% endif %}" type="submit" aria-label="Toggle favorite for {{ gym.name }}">{% if gym.id in favorite_ids %}★{% else %}☆{% endif %}</button>
+              </form>
+            {% endif %}
             <div class="p-4">
               <div class="d-flex justify-content-between gap-2 mb-2">
                 <p class="mb-0 text-muted small">📍 {{ gym.city }}</p>

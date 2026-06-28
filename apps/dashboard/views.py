@@ -1,12 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Prefetch, Q
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.bookings.models import Booking, GymCheckIn, GymSubscription, Session
 from apps.bookings.services import refresh_due_membership_qrs_for_user
 from apps.gyms.models import Gym
+from apps.analytics.services import get_gym_analytics, get_owner_portfolio_analytics, normalize_analytics_days
 from apps.reviews.models import Favorite, Review
 
 
@@ -45,9 +46,28 @@ def owner_dashboard(request):
     total_pending = Booking.objects.filter(gym__owner=request.user, status=Booking.Status.PENDING).count()
     total_confirmed = Booking.objects.filter(gym__owner=request.user, status=Booking.Status.CONFIRMED).count()
     today = timezone.localdate()
+
+    pending_requests = Booking.objects.filter(
+        gym__owner=request.user,
+        status=Booking.Status.PENDING,
+    ).select_related('customer', 'gym', 'plan', 'trainer').order_by('booking_datetime', 'created_at')[:12]
+
+    confirmed_bookings = Booking.objects.filter(
+        gym__owner=request.user,
+        status=Booking.Status.CONFIRMED,
+    ).select_related('customer', 'gym', 'plan', 'trainer').order_by('booking_datetime', '-created_at')[:8]
+
     todays_sessions = Session.objects.filter(gym__owner=request.user, start_time__date=today).select_related('customer', 'gym').order_by('start_time')[:10]
     todays_checkins = GymCheckIn.objects.filter(gym__owner=request.user, checked_in_at__date=today).select_related('customer', 'gym').order_by('-checked_in_at')[:10]
-    active_memberships = GymSubscription.objects.filter(gym__owner=request.user, status=GymSubscription.Status.ACTIVE, end_date__gte=today).count()
+
+    active_membership_qs = GymSubscription.objects.filter(
+        gym__owner=request.user,
+        status=GymSubscription.Status.ACTIVE,
+        end_date__gte=today,
+    ).select_related('customer', 'gym', 'plan').order_by('end_date', 'customer__username')
+    active_memberships = active_membership_qs.count()
+    active_membership_list = active_membership_qs[:8]
+
     return render(request, 'dashboard/owner_dashboard.html', {
         'gyms': gyms,
         'total_pending': total_pending,
@@ -55,6 +75,9 @@ def owner_dashboard(request):
         'todays_sessions': todays_sessions,
         'todays_checkins': todays_checkins,
         'active_memberships': active_memberships,
+        'pending_requests': pending_requests,
+        'confirmed_bookings': confirmed_bookings,
+        'active_membership_list': active_membership_list,
     })
 
 
@@ -81,4 +104,33 @@ def customer_dashboard(request):
         'active_subscriptions': active_subscriptions,
         'upcoming_sessions': upcoming_sessions,
         'stats': stats,
+    })
+
+
+@login_required
+def owner_analytics(request):
+    if not _can_access_owner_dashboard(request.user):
+        messages.warning(request, 'Analytics are only available for gym owners and platform admins.')
+        return redirect('customer_dashboard')
+    days = normalize_analytics_days(request.GET.get('days'), default=30)
+    portfolio = get_owner_portfolio_analytics(request.user, days=days)
+    return render(request, 'dashboard/owner_analytics.html', {
+        'portfolio': portfolio,
+        'days': days,
+        'range_options': [7, 30, 90, 120, 360],
+    })
+
+
+@login_required
+def owner_gym_analytics(request, gym_id):
+    if not _can_access_owner_dashboard(request.user):
+        messages.warning(request, 'Analytics are only available for gym owners and platform admins.')
+        return redirect('customer_dashboard')
+    gym = get_object_or_404(Gym, id=gym_id, owner=request.user)
+    days = normalize_analytics_days(request.GET.get('days'), default=30)
+    analytics = get_gym_analytics(gym, days=days)
+    return render(request, 'dashboard/owner_gym_analytics.html', {
+        'analytics': analytics,
+        'days': days,
+        'range_options': [7, 30, 90, 120, 360],
     })

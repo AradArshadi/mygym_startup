@@ -40,6 +40,7 @@
           {% endif %}
           {% if user.role == 'OWNER' %}
             <li class="nav-item"><a class="nav-link" href="{% url 'owner_dashboard' %}">Owner Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'owner_analytics' %}">Analytics</a></li>
             <li class="nav-item"><a class="btn btn-primary rounded-pill px-4 w-100 w-lg-auto" href="{% url 'owner_gym_create' %}">Add Gym</a></li>
           {% elif user.role == 'CUSTOMER' %}
             <li class="nav-item"><a class="nav-link" href="{% url 'fitness_home' %}">Home</a></li>

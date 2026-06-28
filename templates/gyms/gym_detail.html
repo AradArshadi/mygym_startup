@@ -15,7 +15,16 @@
         <div class="price-panel glass-light text-dark p-4">
           <span class="text-muted">Memberships from</span>
           <strong class="display-5 d-block">€{{ gym.starting_price }}</strong>
-          <a href="#book" class="btn btn-primary rounded-pill w-100 mt-3">Book a trial</a>
+          <div class="d-grid gap-2 mt-3">
+            <a href="#book" class="btn btn-primary rounded-pill">Book a trial</a>
+            {% if user.is_authenticated %}
+              <form method="post" action="{% url 'toggle_favorite' gym.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button class="btn {% if is_favorited %}btn-dark{% else %}btn-outline-dark{% endif %} rounded-pill w-100" type="submit">{% if is_favorited %}★ Favorited{% else %}☆ Add to favorites{% endif %}</button>
+              </form>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>

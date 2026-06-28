@@ -487,3 +487,27 @@ This hotfix improves the first `v0.9.3` Fitness Home experience:
 - Future social/chat placeholders moved to More so the current product feels less confusing.
 - Home now has clearer start actions for exploring gyms, opening the access pass, logging workouts, and viewing MyGym.
 - No database migration required.
+
+
+## Release notes
+
+- [v0.9.3.5 — Owner Dashboard UX Hotfix](V0_9_3_5_RELEASE_NOTES.md)
+
+
+## v0.9.3.6 — Owner Analytics & Favorite Gym Foundation
+
+This refinement adds owner analytics while staying inside the v0.9.3 UI/UX tuning line. Owners can now open portfolio analytics and per-gym analytics to see QR check-in traffic, peak arrival times, membership growth, estimated income, booking conversion, and multi-gym comparison. Customers can also favorite gyms from gym cards and gym detail pages.
+
+## v0.9.3.7 — Owner Analytics MySQL Safety Hotfix
+
+- Fixed `/dashboard/owner/analytics/` crash caused by DB-side date truncation returning `None` on some MySQL/PythonAnywhere setups.
+- Analytics now aggregates peak hours, weekday traffic, and growth buckets safely in Python after timezone conversion.
+- No database migration required.
+
+Release notes: [v0.9.3.7 — Owner Analytics MySQL Safety Hotfix](V0_9_3_7_RELEASE_NOTES.md)
+
+## v0.9.3.8 — Gym Control Center UX Hotfix
+
+Owner gym management pages now use a premium control-center layout with responsive plan cards, grouped edit sections, cleaner trainer/photo management, dark/light theme consistency, and mobile-friendly controls.
+
+No database migration is required for this hotfix.

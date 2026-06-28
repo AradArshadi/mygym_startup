@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.analytics.models import GymView, SearchLog
+from apps.reviews.models import Favorite
 from .forms import GymForm, GymImageForm, MembershipPlanForm, TrainerProfileForm
 from .models import Gym, GymImage, MembershipPlan, TrainerProfile
 
@@ -108,8 +109,13 @@ def gym_list(request):
                 'lng': float(gym.longitude),
             })
 
+    favorite_ids = set()
+    if request.user.is_authenticated:
+        favorite_ids = set(Favorite.objects.filter(user=request.user, gym__in=gym_list_items).values_list('gym_id', flat=True))
+
     return render(request, 'gyms/gym_list.html', {
         'gyms': gym_list_items,
+        'favorite_ids': favorite_ids,
         'map_gyms': map_gyms,
         'query': query,
         'city': city,
@@ -145,7 +151,8 @@ def gym_detail(request, slug):
             session_key=request.session.session_key or '',
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-    return render(request, 'gyms/gym_detail.html', {'gym': gym})
+    is_favorited = Favorite.objects.filter(user=request.user, gym=gym).exists()
+    return render(request, 'gyms/gym_detail.html', {'gym': gym, 'is_favorited': is_favorited})
 
 
 @login_required

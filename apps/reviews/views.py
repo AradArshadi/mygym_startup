@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect
 from apps.gyms.models import Gym
-from .models import Review
+from .models import Favorite, Review
 from apps.emails.services import send_review_notice_to_owner
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification_safely
@@ -53,4 +53,23 @@ def create_review(request, gym_id):
     log_event(level='INFO', category='REVIEW', event='review_created', message=f'{request.user.username} reviewed {gym.name}', actor=request.user, request=request, related_model='Review', related_id=review.id, metadata={'rating': rating})
 
     messages.success(request, 'Review submitted. Thanks for helping other customers!')
+    return redirect('gym_detail', slug=gym.slug)
+
+
+@login_required
+def toggle_favorite(request, gym_id):
+    gym = get_object_or_404(Gym, id=gym_id, status=Gym.Status.APPROVED)
+    if request.method != 'POST':
+        return redirect('gym_detail', slug=gym.slug)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, gym=gym)
+    if created:
+        messages.success(request, f'{gym.name} was added to your favorite gyms.')
+        log_event(level='INFO', category='SYSTEM', event='favorite_created', message=f'{request.user.username} favorited {gym.name}', actor=request.user, request=request, related_model='Favorite', related_id=favorite.id)
+    else:
+        favorite.delete()
+        messages.info(request, f'{gym.name} was removed from your favorite gyms.')
+        log_event(level='INFO', category='SYSTEM', event='favorite_removed', message=f'{request.user.username} removed favorite {gym.name}', actor=request.user, request=request, related_model='Gym', related_id=gym.id)
+    next_url = request.POST.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect('gym_detail', slug=gym.slug)
