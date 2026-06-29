@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.conf import settings
+from django.core.management import call_command
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
@@ -7,6 +9,7 @@ from django.db.models import Count, Avg, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from io import StringIO
 
 from apps.analytics.models import GymView
 from apps.bookings.models import Booking
@@ -26,6 +29,7 @@ from apps.emails.services import (
     send_session_qr_to_customer,
 )
 from apps.notifications.services import create_notification_safely
+from apps.systemlogs.models import SystemLog
 from apps.systemlogs.services import log_event
 
 User = get_user_model()
@@ -35,6 +39,14 @@ def admin_required(view_func):
     @login_required
     def wrapper(request, *args, **kwargs):
         if not (request.user.is_superuser or request.user.is_staff or request.user.role == User.Role.ADMIN):
+            log_event(
+                level='WARNING',
+                category='ADMIN',
+                event='control_deck_permission_denied',
+                message='Non-admin attempted to access Control Deck.',
+                actor=request.user if request.user.is_authenticated else None,
+                request=request,
+            )
             raise PermissionDenied('Only platform admins can access the Control Deck.')
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -43,6 +55,64 @@ def admin_required(view_func):
 def can_promote_admin(user):
     # Only the real Django superuser can create another platform admin.
     return user.is_authenticated and user.is_superuser
+
+
+def _is_demo_tools_enabled():
+    return getattr(settings, 'DEMO_TOOLS_ENABLED', False)
+
+
+def _security_check_rows():
+    rows = [
+        {
+            'label': 'Environment',
+            'value': getattr(settings, 'ENVIRONMENT', 'development'),
+            'ok': not (getattr(settings, 'IS_PRODUCTION', False) and settings.DEBUG),
+            'hint': 'Production should run with DEBUG=False.',
+        },
+        {
+            'label': 'DEBUG',
+            'value': str(settings.DEBUG),
+            'ok': not settings.DEBUG,
+            'hint': 'DEBUG=True is acceptable only in local development.',
+        },
+        {
+            'label': 'Allowed hosts',
+            'value': ', '.join(settings.ALLOWED_HOSTS) or 'EMPTY',
+            'ok': bool(settings.ALLOWED_HOSTS),
+            'hint': 'Must contain the deployed domain.',
+        },
+        {
+            'label': 'CSRF trusted origins',
+            'value': ', '.join(getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])) or 'Not set',
+            'ok': bool(getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])) or not getattr(settings, 'IS_PRODUCTION', False),
+            'hint': 'Set this for HTTPS deployment domains.',
+        },
+        {
+            'label': 'Secure session cookies',
+            'value': str(getattr(settings, 'SESSION_COOKIE_SECURE', False)),
+            'ok': bool(getattr(settings, 'SESSION_COOKIE_SECURE', False)) or not getattr(settings, 'IS_PRODUCTION', False),
+            'hint': 'Should be True behind HTTPS in production.',
+        },
+        {
+            'label': 'Secure CSRF cookies',
+            'value': str(getattr(settings, 'CSRF_COOKIE_SECURE', False)),
+            'ok': bool(getattr(settings, 'CSRF_COOKIE_SECURE', False)) or not getattr(settings, 'IS_PRODUCTION', False),
+            'hint': 'Should be True behind HTTPS in production.',
+        },
+        {
+            'label': 'Email backend',
+            'value': getattr(settings, 'EMAIL_BACKEND', ''),
+            'ok': 'console' not in getattr(settings, 'EMAIL_BACKEND', '').lower() or not getattr(settings, 'IS_PRODUCTION', False),
+            'hint': 'Production should use SMTP/API delivery, not console backend.',
+        },
+        {
+            'label': 'Demo tools',
+            'value': 'Enabled' if _is_demo_tools_enabled() else 'Disabled',
+            'ok': not (_is_demo_tools_enabled() and getattr(settings, 'IS_PRODUCTION', False)),
+            'hint': 'Keep disabled for real production. Enable only for demo/test servers.',
+        },
+    ]
+    return rows
 
 
 def _base_metrics():
@@ -311,4 +381,80 @@ def control_logs(request):
         'active_level': level,
         'active_category': category,
         'q': q,
+    })
+
+
+@admin_required
+def control_security(request):
+    today = timezone.localdate()
+    rows = _security_check_rows()
+    failed_emails_today = SystemLog.objects.filter(
+        category=SystemLog.Category.EMAIL,
+        level__in=[SystemLog.Level.ERROR, SystemLog.Level.CRITICAL],
+        created_at__date=today,
+    ).count()
+    recent_errors = SystemLog.objects.select_related('actor').filter(
+        level__in=[SystemLog.Level.ERROR, SystemLog.Level.CRITICAL]
+    ).order_by('-created_at')[:12]
+    recent_security_events = SystemLog.objects.select_related('actor').filter(
+        Q(event__icontains='permission') | Q(event__icontains='denied') | Q(event__icontains='checkin') | Q(event__icontains='qr')
+    ).order_by('-created_at')[:12]
+    return render(request, 'controlpanel/security.html', {
+        'rows': rows,
+        'failed_emails_today': failed_emails_today,
+        'recent_errors': recent_errors,
+        'recent_security_events': recent_security_events,
+        'demo_tools_enabled': _is_demo_tools_enabled(),
+    })
+
+
+@admin_required
+def control_demo_tools(request):
+    output = ''
+    if request.method == 'POST':
+        if not _is_demo_tools_enabled():
+            messages.error(request, 'Demo tools are disabled. Set DEMO_TOOLS_ENABLED=True only on test/demo environments.')
+            return redirect('control_demo_tools')
+        action = request.POST.get('action')
+        if action == 'seed_analytics':
+            owner = request.POST.get('owner', '').strip()
+            days = request.POST.get('days') or '120'
+            customers = request.POST.get('customers') or '25'
+            dry_run = request.POST.get('dry_run') == 'on'
+            out = StringIO()
+            try:
+                args = ['--days', str(days), '--customers', str(customers)]
+                if owner:
+                    args += ['--owner', owner]
+                if dry_run:
+                    args += ['--dry-run']
+                call_command('seed_demo_analytics', *args, stdout=out)
+                output = out.getvalue()
+                messages.success(request, 'Demo analytics command completed.')
+                log_event(
+                    level='WARNING',
+                    category='ADMIN',
+                    event='demo_analytics_seeded_from_control_deck',
+                    message='Admin ran seed_demo_analytics from Control Deck.',
+                    actor=request.user,
+                    request=request,
+                    metadata={'owner': owner, 'days': days, 'customers': customers, 'dry_run': dry_run},
+                )
+            except Exception as exc:
+                output = out.getvalue() + f'\nERROR: {exc.__class__.__name__}: {exc}'
+                messages.error(request, f'Demo command failed: {exc}')
+                log_event(
+                    level='ERROR',
+                    category='ADMIN',
+                    event='demo_analytics_seed_failed',
+                    message=str(exc),
+                    actor=request.user,
+                    request=request,
+                )
+        else:
+            messages.error(request, 'Unknown demo action.')
+    return render(request, 'controlpanel/demo_tools.html', {
+        'enabled': _is_demo_tools_enabled(),
+        'output': output,
+        'owners': User.objects.filter(role=User.Role.OWNER).order_by('username')[:100],
     })

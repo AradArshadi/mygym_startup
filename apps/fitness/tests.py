@@ -46,10 +46,25 @@ class FitnessHomeTests(TestCase):
         self.assertEqual(workout.duration_minutes, 62)
 
     def test_weekly_count_and_summary(self):
-        now = timezone.now()
-        WorkoutLog.objects.create(user=self.customer, title='Push', logged_at=now, duration_minutes=45)
-        WorkoutLog.objects.create(user=self.customer, title='Pull', logged_at=now - timedelta(days=1), duration_minutes=50)
+        current_week = week_start_for()
+        first_day = timezone.make_aware(datetime.combine(current_week, time(hour=10)))
+        second_day = timezone.make_aware(datetime.combine(current_week + timedelta(days=1), time(hour=18)))
+
+        WorkoutLog.objects.create(
+            user=self.customer,
+            title='Push',
+            logged_at=first_day,
+            duration_minutes=45,
+        )
+        WorkoutLog.objects.create(
+            user=self.customer,
+            title='Pull',
+            logged_at=second_day,
+            duration_minutes=50,
+        )
+
         self.assertEqual(weekly_workout_count(self.customer), 2)
+
         summary = fitness_summary(self.customer)
         self.assertEqual(summary['week_count'], 2)
         self.assertEqual(summary['total_workouts'], 2)

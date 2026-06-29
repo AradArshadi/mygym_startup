@@ -2150,3 +2150,143 @@ html[data-theme="dark"] .premium-gym-edit-form select:focus { background: rgba(2
   .trainer-control-card,
   .control-photo-card { border-radius: 1.25rem; }
 }
+
+/* v0.9.3.9 — Security/demo tools + dark mode consistency pass */
+.security-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .85rem;
+}
+.security-check-card {
+  display: flex;
+  gap: .8rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: rgba(255,255,255,.54);
+  border: 1px solid var(--line);
+}
+.security-status-dot {
+  width: .8rem;
+  height: .8rem;
+  flex: 0 0 .8rem;
+  margin-top: .25rem;
+  border-radius: 50%;
+  background: #dc3545;
+  box-shadow: 0 0 0 4px rgba(220,53,69,.10);
+}
+.security-check-card.ok .security-status-dot { background: #20c997; box-shadow: 0 0 0 4px rgba(32,201,151,.12); }
+.security-check-card strong { display: block; font-weight: 950; color: var(--text-main); }
+.security-check-card p { margin: .2rem 0; font-weight: 850; color: var(--text-main); word-break: break-word; }
+.security-check-card small { color: var(--text-muted); font-weight: 650; }
+.control-log-row {
+  display: grid;
+  gap: .18rem;
+  padding: .9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1.1rem;
+  background: rgba(255,255,255,.48);
+}
+.control-log-row strong { font-weight: 950; color: var(--text-main); }
+.control-log-row span { color: var(--primary); font-size: .78rem; font-weight: 900; }
+.control-log-row small { color: var(--text-muted); font-weight: 650; }
+.demo-command-output {
+  min-height: 360px;
+  max-height: 560px;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: #111318;
+  color: #fff1e8;
+  border: 1px solid rgba(255,255,255,.12);
+  font-size: .82rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+/* Marketplace dark mode reliability: gym cards, filters, tables and bootstrap leftovers. */
+html[data-theme="dark"] .discovery-filter-card,
+html[data-theme="dark"] .filter-search-main,
+html[data-theme="dark"] .filter-search-city,
+html[data-theme="dark"] .filter-search-price,
+html[data-theme="dark"] .filter-tools-row,
+html[data-theme="dark"] .filter-panel,
+html[data-theme="dark"] .view-switch,
+html[data-theme="dark"] .neo-panel,
+html[data-theme="dark"] .glass-card,
+html[data-theme="dark"] .glass-light,
+html[data-theme="dark"] .review-card,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .notification-card,
+html[data-theme="dark"] .security-check-card,
+html[data-theme="dark"] .control-log-row {
+  background: rgba(24,25,31,.82) !important;
+  border-color: rgba(255,255,255,.11) !important;
+  color: var(--text-main) !important;
+}
+html[data-theme="dark"] .neo-gym-card {
+  background: rgba(24,25,31,.86) !important;
+  border-color: rgba(255,255,255,.11) !important;
+  color: #fff !important;
+}
+html[data-theme="dark"] .neo-gym-card h1,
+html[data-theme="dark"] .neo-gym-card h2,
+html[data-theme="dark"] .neo-gym-card h3,
+html[data-theme="dark"] .neo-gym-card h4,
+html[data-theme="dark"] .neo-gym-card h5,
+html[data-theme="dark"] .neo-gym-card strong,
+html[data-theme="dark"] .neo-panel h1,
+html[data-theme="dark"] .neo-panel h2,
+html[data-theme="dark"] .neo-panel h3,
+html[data-theme="dark"] .glass-card h1,
+html[data-theme="dark"] .glass-card h2,
+html[data-theme="dark"] .glass-card h3,
+html[data-theme="dark"] .glass-card h4,
+html[data-theme="dark"] .security-check-card strong,
+html[data-theme="dark"] .control-log-row strong { color: #fff !important; }
+html[data-theme="dark"] .text-muted,
+html[data-theme="dark"] small.text-muted,
+html[data-theme="dark"] .neo-gym-card p,
+html[data-theme="dark"] .neo-gym-card small,
+html[data-theme="dark"] .filter-label,
+html[data-theme="dark"] .security-check-card small,
+html[data-theme="dark"] .control-log-row small { color: rgba(248,244,238,.66) !important; }
+html[data-theme="dark"] .filter-search-row input,
+html[data-theme="dark"] .discovery-filter-card input,
+html[data-theme="dark"] .discovery-filter-card select,
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select {
+  background: rgba(255,255,255,.075) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+}
+html[data-theme="dark"] .filter-search-row input::placeholder,
+html[data-theme="dark"] .form-control::placeholder { color: rgba(248,244,238,.46) !important; }
+html[data-theme="dark"] .facility-filter-chip span,
+html[data-theme="dark"] .chip,
+html[data-theme="dark"] .rating-badge,
+html[data-theme="dark"] .gym-control-meta > span:not(.status-pill) {
+  background: rgba(255,255,255,.07) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: rgba(248,244,238,.84) !important;
+}
+html[data-theme="dark"] .facility-filter-chip input:checked + span,
+html[data-theme="dark"] .view-switch a.active {
+  background: linear-gradient(135deg, var(--primary), #ff824a) !important;
+  border-color: rgba(255,90,31,.85) !important;
+  color: #fff !important;
+}
+html[data-theme="dark"] .view-switch a { color: rgba(248,244,238,.72) !important; }
+html[data-theme="dark"] .neo-table,
+html[data-theme="dark"] .table { --bs-table-bg: transparent; --bs-table-color: rgba(248,244,238,.84); --bs-table-border-color: rgba(255,255,255,.10); color: rgba(248,244,238,.84) !important; }
+html[data-theme="dark"] .neo-table thead th,
+html[data-theme="dark"] .table thead th { background: rgba(255,255,255,.065) !important; color: rgba(248,244,238,.68) !important; border-color: rgba(255,255,255,.10) !important; }
+html[data-theme="dark"] .empty-state {
+  background: rgba(255,255,255,.055) !important;
+  border-color: rgba(255,255,255,.14) !important;
+  color: rgba(248,244,238,.66) !important;
+}
+html[data-theme="dark"] .btn-outline-dark { color: #fff; border-color: rgba(255,255,255,.28); }
+html[data-theme="dark"] .btn-outline-dark:hover { background: #fff; color: #141414; }
+html[data-theme="dark"] .text-bg-light { background-color: rgba(255,255,255,.10) !important; color: #fff !important; }
+@media (max-width: 991px) { .security-check-grid { grid-template-columns: 1fr; } }

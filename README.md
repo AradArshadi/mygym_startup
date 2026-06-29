@@ -511,3 +511,24 @@ Release notes: [v0.9.3.7 — Owner Analytics MySQL Safety Hotfix](V0_9_3_7_RELEA
 Owner gym management pages now use a premium control-center layout with responsive plan cards, grouped edit sections, cleaner trainer/photo management, dark/light theme consistency, and mobile-friendly controls.
 
 No database migration is required for this hotfix.
+
+## v0.9.3.9 — Security, Safety & Demo Stability
+
+This refinement adds a Control Deck Safety Center, demo seed tools, upload validation, backup/recovery docs, and a dark/light consistency pass for marketplace cards and filters.
+
+Useful commands:
+
+```bash
+python manage.py seed_demo_analytics --days 120 --customers 25
+python manage.py seed_demo_analytics --owner owner_demo --days 360
+python manage.py check --deploy
+```
+
+Control Deck pages:
+
+```text
+/control/security/
+/control/demo-tools/
+```
+
+Keep `DEMO_TOOLS_ENABLED=False` in real production.

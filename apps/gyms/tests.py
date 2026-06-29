@@ -67,3 +67,15 @@ class GymControlCenterUXTests(TestCase):
         self.client.force_login(self.customer)
         response = self.client.get(reverse('owner_gym_manage', args=[self.gym.slug]))
         self.assertEqual(response.status_code, 403)
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
+from .forms import GymImageForm
+
+
+class GymImageUploadSafetyTests(TestCase):
+    @override_settings(MAX_GYM_IMAGE_UPLOAD_MB=1, ALLOWED_GYM_IMAGE_EXTENSIONS=['jpg', 'jpeg', 'png', 'webp'])
+    def test_rejects_non_image_upload(self):
+        upload = SimpleUploadedFile('bad.txt', b'not-an-image', content_type='text/plain')
+        form = GymImageForm(files={'image': upload}, data={'alt_text': 'bad', 'is_cover': ''})
+        self.assertFalse(form.is_valid())

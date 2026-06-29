@@ -159,6 +159,9 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='myGym <noreply@mygym.
 SERVER_EMAIL = config('SERVER_EMAIL', default=DEFAULT_FROM_EMAIL)
 SUPPORT_EMAIL = config('SUPPORT_EMAIL', default=DEFAULT_FROM_EMAIL)
 SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
+DEMO_TOOLS_ENABLED = config('DEMO_TOOLS_ENABLED', default=not IS_PRODUCTION, cast=bool)
+MAX_GYM_IMAGE_UPLOAD_MB = config('MAX_GYM_IMAGE_UPLOAD_MB', default=5, cast=int)
+ALLOWED_GYM_IMAGE_EXTENSIONS = [ext.lower().strip() for ext in config('ALLOWED_GYM_IMAGE_EXTENSIONS', default='jpg,jpeg,png,webp', cast=Csv()) if ext.strip()]
 
 if RUNNING_TESTS:
     EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
