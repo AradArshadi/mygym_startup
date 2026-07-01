@@ -10,7 +10,7 @@ from apps.gyms.models import Gym
 from apps.reviews.models import Favorite, Review
 from apps.systemlogs.services import log_event
 
-from .forms import WorkoutGoalForm, WorkoutLogForm
+from .forms import ProfileUpdateForm, WorkoutGoalForm, WorkoutLogForm
 from .models import WorkoutLog
 from .services import fitness_summary, get_or_create_goal, normalize_activity_days
 
@@ -133,6 +133,16 @@ def chat_home(request):
 @login_required
 def more_menu(request):
     return render(request, 'fitness/more.html')
+
+
+@login_required
+def edit_profile(request):
+    form = ProfileUpdateForm(request.POST or None, instance=request.user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Account details updated.')
+        return redirect('profile_hub')
+    return render(request, 'fitness/edit_profile.html', {'form': form})
 
 
 @login_required

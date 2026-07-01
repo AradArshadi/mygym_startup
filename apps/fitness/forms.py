@@ -34,3 +34,17 @@ class WorkoutGoalForm(forms.ModelForm):
         widgets = {
             'weekly_target': forms.NumberInput(attrs={'min': 1, 'max': 14}),
         }
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        from django.contrib.auth import get_user_model
+        model = get_user_model()
+        fields = ['username', 'email', 'first_name', 'last_name', 'phone']
+        widgets = {
+            'username': forms.TextInput(attrs={'autocomplete': 'username'}),
+            'email': forms.EmailInput(attrs={'autocomplete': 'email'}),
+            'first_name': forms.TextInput(attrs={'autocomplete': 'given-name'}),
+            'last_name': forms.TextInput(attrs={'autocomplete': 'family-name'}),
+            'phone': forms.TextInput(attrs={'autocomplete': 'tel'}),
+        }

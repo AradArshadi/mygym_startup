@@ -20,7 +20,7 @@
   <div class="col-xl-5">
     <section class="glass-card p-4 h-100">
       <h3 class="h5 fw-black mb-2">Seed analytics demo data</h3>
-      <p class="text-muted fw-semibold">Append realistic bookings, subscriptions, QR check-ins, favorites and workout logs. This does not delete existing data.</p>
+      <p class="text-muted fw-semibold">Append realistic bookings, subscriptions, QR check-ins, favorites and workout logs. Optional reset removes only previous demo analytics records before reseeding smoother charts.</p>
       <form method="post" class="premium-control-form">
         {% csrf_token %}
         <input type="hidden" name="action" value="seed_analytics">
@@ -37,6 +37,7 @@
           <label class="control-field"><span>Customers</span><input name="customers" type="number" min="5" max="300" value="25"></label>
         </div>
         <label class="control-checkline"><input type="checkbox" name="dry_run"><span><strong>Dry run</strong><small>Preview without writing records.</small></span></label>
+        <label class="control-checkline"><input type="checkbox" name="reset_demo"><span><strong>Reset previous demo analytics</strong><small>Deletes only generated demo traffic/workouts/favorites, then creates cleaner realistic data.</small></span></label>
         <button class="btn btn-primary rounded-pill" {% if not enabled %}disabled{% endif %}>Run seed command</button>
       </form>
     </section>

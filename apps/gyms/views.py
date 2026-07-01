@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -96,7 +97,15 @@ def gym_list(request):
         .distinct()
     )
 
-    gym_list_items = list(gyms)
+    total_results = gyms.count()
+    paginator = Paginator(gyms, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    gym_list_items = list(page_obj.object_list)
+
+    page_params = request.GET.copy()
+    page_params.pop('page', None)
+    page_query_string = page_params.urlencode()
+
     map_gyms = []
     for gym in gym_list_items:
         if gym.latitude is not None and gym.longitude is not None:
@@ -115,6 +124,10 @@ def gym_list(request):
 
     return render(request, 'gyms/gym_list.html', {
         'gyms': gym_list_items,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'results_count': total_results,
+        'page_query_string': page_query_string,
         'favorite_ids': favorite_ids,
         'map_gyms': map_gyms,
         'query': query,

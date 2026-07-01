@@ -32,7 +32,7 @@
         <a href="{% url 'owner_gym_edit' gym.slug %}" class="active">Edit info</a>
         <a href="{% url 'owner_gym_manage' gym.slug %}#gym-trainers">Trainers</a>
         <a href="{% url 'owner_gym_manage' gym.slug %}#gym-photos">Photos</a>
-        <a href="{% url 'owner_gym_analytics' gym.id %}">Analytics</a>
+        <a href="{% url 'owner_dashboard' %}#owner-gym-analytics-{{ gym.id }}">Analytics</a>
       </nav>
     {% endif %}
   </div>

@@ -421,6 +421,7 @@ def control_demo_tools(request):
             days = request.POST.get('days') or '120'
             customers = request.POST.get('customers') or '25'
             dry_run = request.POST.get('dry_run') == 'on'
+            reset_demo = request.POST.get('reset_demo') == 'on'
             out = StringIO()
             try:
                 args = ['--days', str(days), '--customers', str(customers)]
@@ -428,6 +429,8 @@ def control_demo_tools(request):
                     args += ['--owner', owner]
                 if dry_run:
                     args += ['--dry-run']
+                if reset_demo:
+                    args += ['--reset-demo']
                 call_command('seed_demo_analytics', *args, stdout=out)
                 output = out.getvalue()
                 messages.success(request, 'Demo analytics command completed.')
@@ -438,7 +441,7 @@ def control_demo_tools(request):
                     message='Admin ran seed_demo_analytics from Control Deck.',
                     actor=request.user,
                     request=request,
-                    metadata={'owner': owner, 'days': days, 'customers': customers, 'dry_run': dry_run},
+                    metadata={'owner': owner, 'days': days, 'customers': customers, 'dry_run': dry_run, 'reset_demo': reset_demo},
                 )
             except Exception as exc:
                 output = out.getvalue() + f'\nERROR: {exc.__class__.__name__}: {exc}'

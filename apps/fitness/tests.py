@@ -49,22 +49,9 @@ class FitnessHomeTests(TestCase):
         current_week = week_start_for()
         first_day = timezone.make_aware(datetime.combine(current_week, time(hour=10)))
         second_day = timezone.make_aware(datetime.combine(current_week + timedelta(days=1), time(hour=18)))
-
-        WorkoutLog.objects.create(
-            user=self.customer,
-            title='Push',
-            logged_at=first_day,
-            duration_minutes=45,
-        )
-        WorkoutLog.objects.create(
-            user=self.customer,
-            title='Pull',
-            logged_at=second_day,
-            duration_minutes=50,
-        )
-
+        WorkoutLog.objects.create(user=self.customer, title='Push', logged_at=first_day, duration_minutes=45)
+        WorkoutLog.objects.create(user=self.customer, title='Pull', logged_at=second_day, duration_minutes=50)
         self.assertEqual(weekly_workout_count(self.customer), 2)
-
         summary = fitness_summary(self.customer)
         self.assertEqual(summary['week_count'], 2)
         self.assertEqual(summary['total_workouts'], 2)
@@ -204,3 +191,29 @@ class FitnessClarityUXTests(TestCase):
         self.assertContains(response, 'Discover preview')
         self.assertContains(response, 'Chat preview')
         self.assertContains(response, 'Logout')
+
+
+class FitnessProfileEditTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.customer = self.User.objects.create_user(username='profile_customer', email='profile@example.com', password='pass12345', role='CUSTOMER')
+
+    def test_customer_can_open_edit_profile(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse('edit_profile'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Edit your details')
+
+    def test_customer_can_update_email_and_username(self):
+        self.client.force_login(self.customer)
+        response = self.client.post(reverse('edit_profile'), {
+            'username': 'clarity_customer_updated',
+            'email': 'updated@example.com',
+            'first_name': 'Clarity',
+            'last_name': 'Customer',
+            'phone': '+4912345',
+        })
+        self.assertRedirects(response, reverse('profile_hub'))
+        self.customer.refresh_from_db()
+        self.assertEqual(self.customer.username, 'clarity_customer_updated')
+        self.assertEqual(self.customer.email, 'updated@example.com')

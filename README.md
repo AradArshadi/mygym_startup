@@ -408,127 +408,68 @@ python manage.py show_email_config
 python manage.py email_probe your-email@example.com --template
 ```
 
-## v0.9.3.4 — Fitness Home Rebase
+## v0.9.3.0 — Fitness Home, Owner Operations & Stability Build
 
-This release starts the transition from a pure gym marketplace into a fitness lifestyle platform.
+This build consolidates the work after the previous public `v0.9.2.7` release into one clean `0.9.3.0` milestone candidate. It is still intended for testing and demo validation before an official tag is created.
 
 ### Product direction
 
-myGym is now moving toward:
+myGym is evolving from a gym listing app into a fitness marketplace and operating system:
 
-- Marketplace for gyms and sport facilities
-- Customer fitness home
-- Owner operating dashboard
-- Workout tracking and weekly consistency
-- Future social feed, friends, DMs, and marketplace modules
+- Customer Fitness Home
+- Gym discovery and favorites
+- Booking requests, sessions, and QR access passes
+- Workout logging and weekly consistency tracking
+- Owner command center with bookings, members, check-ins, and analytics
+- Gym Control Center for plans, trainers, photos, and profile edits
+- Control Deck safety/demo tools for admin testing
 
-### Added in v0.9.3
+### Main features in this build
 
-- New `apps.fitness` app
-- Customer Fitness Home at `/fitness/`
-- Workout logging (`WorkoutLog`)
-- Weekly workout goals (`WorkoutGoal`)
-- Weekly streak/consistency service
-- Training activity grid
-- Mobile bottom navigation for customer mobile view
-- Profile hub for sessions, plans, subscriptions, workouts, saved gyms, and reviews
-- Discover placeholder for future posts/videos/social layer
-- Chat placeholder for future DMs
-- Role-aware login redirect
+- `apps.fitness` app with Fitness Home, workout logs, weekly goals, activity map, profile hub, and edit-account flow
+- Mobile-first navigation with clearer labels: Home / Explore / + / MyGym / More
+- GitHub-style interactive workout activity map with 30 / 90 / 120 / 360 day ranges
+- Favorite gym support on gym cards and gym detail pages
+- Owner dashboard with merged analytics, collapsible sections, and direct manage/edit actions
+- Per-gym analytics embedded into the owner dashboard: QR peak times, growth, estimated income, conversion, favorites, and traffic
+- Gym Control Center UX for plans, trainers, photos, and edit-info forms
+- Explore pagination: backend sends 20 gyms per page
+- Control Deck Safety Center and Demo Tools
+- `seed_demo_analytics` command for realistic test/demo data
+- Upload validation for owner gym images
+- Dark/light mode consistency pass across marketplace cards, filters, dashboards, and control surfaces
+- Security and backup documentation
 
-### Run after pulling
+### Useful commands
 
 ```bash
 python manage.py migrate
-python manage.py test apps.bookings
-python manage.py test apps.fitness
-python manage.py check
-```
-
-### Suggested release tag
-
-```bash
-git tag -a v0.9.3 -m "myGym v0.9.3 — Fitness Home Rebase"
-git push origin main --tags
-```
-
-
-## v0.9.3.1 — Mobile UX & Activity Calendar Hotfix
-
-This hotfix improves the first `v0.9.3` Fitness Home experience:
-
-- Mobile Profile now includes logout access.
-- Global dark/light mode toggle added with browser persistence.
-- Activity calendar now uses myGym orange intensity cells.
-- Calendar flows from top-left and supports 30 / 90 / 120 / 360 day ranges.
-- No database migration is required for this hotfix.
-
-## v0.9.3.2 — Activity Map & Mobile Navigation Debug Hotfix
-
-- Replaced the oversized activity tiles with a GitHub-style workout contribution calendar.
-- Calendar counts now match the selected 30/90/120/360 day range.
-- Added orange activity intensity levels aligned with the myGym design language.
-- Restored the mobile hamburger as a fallback while keeping the bottom nav.
-- Added `debug_workout_activity` management command for diagnosing workout/date/range issues.
-
-
-## v0.9.3.3 — Interactive Activity Map UX Hotfix
-
-- Training Activity map cells are now clickable/tappable.
-- Each selected day shows the workout count for that day.
-- Month labels no longer collide in short ranges.
-- Removed extra helper copy from the contribution map.
-- No database migration required.
-
-
-## v0.9.3.4 — Clarity UX Hotfix
-
-- Customer mobile nav is now Home / Explore / + / MyGym / More.
-- Future social/chat placeholders moved to More so the current product feels less confusing.
-- Home now has clearer start actions for exploring gyms, opening the access pass, logging workouts, and viewing MyGym.
-- No database migration required.
-
-
-## Release notes
-
-- [v0.9.3.5 — Owner Dashboard UX Hotfix](V0_9_3_5_RELEASE_NOTES.md)
-
-
-## v0.9.3.6 — Owner Analytics & Favorite Gym Foundation
-
-This refinement adds owner analytics while staying inside the v0.9.3 UI/UX tuning line. Owners can now open portfolio analytics and per-gym analytics to see QR check-in traffic, peak arrival times, membership growth, estimated income, booking conversion, and multi-gym comparison. Customers can also favorite gyms from gym cards and gym detail pages.
-
-## v0.9.3.7 — Owner Analytics MySQL Safety Hotfix
-
-- Fixed `/dashboard/owner/analytics/` crash caused by DB-side date truncation returning `None` on some MySQL/PythonAnywhere setups.
-- Analytics now aggregates peak hours, weekday traffic, and growth buckets safely in Python after timezone conversion.
-- No database migration required.
-
-Release notes: [v0.9.3.7 — Owner Analytics MySQL Safety Hotfix](V0_9_3_7_RELEASE_NOTES.md)
-
-## v0.9.3.8 — Gym Control Center UX Hotfix
-
-Owner gym management pages now use a premium control-center layout with responsive plan cards, grouped edit sections, cleaner trainer/photo management, dark/light theme consistency, and mobile-friendly controls.
-
-No database migration is required for this hotfix.
-
-## v0.9.3.9 — Security, Safety & Demo Stability
-
-This refinement adds a Control Deck Safety Center, demo seed tools, upload validation, backup/recovery docs, and a dark/light consistency pass for marketplace cards and filters.
-
-Useful commands:
-
-```bash
 python manage.py seed_demo_analytics --days 120 --customers 25
-python manage.py seed_demo_analytics --owner owner_demo --days 360
+python manage.py seed_demo_analytics --days 120 --customers 25 --reset-demo
+python manage.py check
 python manage.py check --deploy
 ```
 
-Control Deck pages:
+### Test commands
+
+```bash
+python manage.py test apps.accounts
+python manage.py test apps.gyms
+python manage.py test apps.bookings
+python manage.py test apps.dashboard
+python manage.py test apps.controlpanel
+python manage.py test apps.fitness
+```
+
+### Control Deck pages
 
 ```text
 /control/security/
 /control/demo-tools/
 ```
 
-Keep `DEMO_TOOLS_ENABLED=False` in real production.
+Keep demo tools disabled in real production:
+
+```env
+DEMO_TOOLS_ENABLED=False
+```

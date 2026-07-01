@@ -24,7 +24,7 @@
         <div class="hero-orbit">
           <div class="floating-card main-stat">
             <span class="tiny-label">Live marketplace</span>
-            <strong>{{ gyms|length }} gyms</strong>
+            <strong>{{ results_count }} gyms</strong>
             <small>matching your filters</small>
           </div>
           <div class="floating-card mini one"><strong>24/7</strong><small>Discovery</small></div>
@@ -109,7 +109,7 @@
     <div>
       <p class="section-kicker">Explore</p>
       <h2 class="section-title mb-0">Available gyms</h2>
-      <p class="text-muted mb-0">{{ gyms|length }} result{{ gyms|length|pluralize }} found</p>
+      <p class="text-muted mb-0">{{ results_count }} result{{ results_count|pluralize }} found · showing {{ gyms|length }} on this page</p>
     </div>
     <div class="view-switch" role="group">
       <a class="{% if view_mode == 'cards' %}active{% endif %}" href="?{{ filter_query_string }}&view=cards">Cards</a>
@@ -189,5 +189,15 @@
       {% empty %}<div class="col-12"><div class="empty-state">No gyms found. Try another search or reset filters.</div></div>{% endfor %}
     </div>
   {% endif %}
+  {% if page_obj.has_other_pages %}
+    <nav class="pagination-shell mt-5" aria-label="Explore pagination">
+      <div class="pagination-summary">Page {{ page_obj.number }} of {{ paginator.num_pages }} · 20 gyms per page</div>
+      <div class="pagination-actions">
+        {% if page_obj.has_previous %}<a class="btn btn-outline-dark rounded-pill owner-outline-action" href="?{{ page_query_string }}&page={{ page_obj.previous_page_number }}">← Previous</a>{% else %}<span class="btn btn-outline-secondary rounded-pill disabled">← Previous</span>{% endif %}
+        {% if page_obj.has_next %}<a class="btn btn-primary rounded-pill" href="?{{ page_query_string }}&page={{ page_obj.next_page_number }}">Next 20 →</a>{% else %}<span class="btn btn-outline-secondary rounded-pill disabled">Next 20 →</span>{% endif %}
+      </div>
+    </nav>
+  {% endif %}
+
 </section>
 {% endblock %}

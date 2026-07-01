@@ -31,6 +31,7 @@ class Command(BaseCommand):
         parser.add_argument('--workouts-per-customer', type=int, default=18)
         parser.add_argument('--password', default='DemoPass123')
         parser.add_argument('--dry-run', action='store_true', help='Show what would be generated without creating records.')
+        parser.add_argument('--reset-demo', action='store_true', help='Remove previous demo analytics records before creating smoother demo data.')
         parser.add_argument('--seed', type=int, default=9309)
 
     def handle(self, *args, **options):
@@ -46,6 +47,9 @@ class Command(BaseCommand):
         if options['dry_run']:
             self.stdout.write(self.style.WARNING('Dry run only. No database records will be created.'))
             return
+
+        if options['reset_demo']:
+            self.reset_demo_data()
 
         totals = {'subscriptions': 0, 'bookings': 0, 'checkins': 0, 'favorites': 0, 'workouts': 0}
         with transaction.atomic():
@@ -65,21 +69,56 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('DONE'))
         for key, value in totals.items():
             self.stdout.write(f'{key.title()}: {value}')
-        self.stdout.write('Refresh /dashboard/owner/analytics/ and /fitness/.')
+        self.stdout.write('Refresh /dashboard/owner/#owner-analytics and /fitness/.')
 
     @staticmethod
     def model_fields(model):
         return {field.name for field in model._meta.fields}
 
     def random_past_datetime(self):
-        days = random.randint(0, max(1, self.options['days']) - 1)
-        hour = random.choices(
-            population=[6, 7, 8, 9, 12, 16, 17, 18, 19, 20, 21],
-            weights=[3, 5, 7, 5, 2, 4, 8, 12, 12, 9, 4],
-            k=1,
-        )[0]
-        minute = random.choice([0, 10, 15, 20, 30, 40, 45, 50])
-        return (self.now - timedelta(days=days)).replace(hour=hour, minute=minute, second=random.randint(0, 59), microsecond=0)
+        """Generate natural-looking demo traffic.
+
+        The previous generator could create cartoonish single-hour spikes. This
+        version still has realistic after-work peaks, but spreads visits across
+        morning, lunch, and evening windows with weekday/weekend variation.
+        """
+        max_days = max(1, self.options['days'])
+        # Slightly favor recent activity without making old ranges empty.
+        if random.random() < 0.58:
+            days = int(random.triangular(0, max_days - 1, 12))
+        else:
+            days = random.randint(0, max_days - 1)
+        candidate_day = self.now - timedelta(days=days)
+        weekday = timezone.localtime(candidate_day).weekday()
+        if weekday >= 5:
+            population = [8, 9, 10, 11, 12, 15, 16, 17, 18, 19]
+            weights =    [3, 5, 7, 7, 4, 4, 6, 7, 5, 3]
+        else:
+            population = [6, 7, 8, 9, 12, 16, 17, 18, 19, 20, 21]
+            weights =    [3, 4, 5, 3, 2, 4, 7, 9, 10, 7, 3]
+        hour = random.choices(population=population, weights=weights, k=1)[0]
+        minute = random.choice([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
+        return candidate_day.replace(hour=hour, minute=minute, second=random.randint(0, 59), microsecond=0)
+
+    def reset_demo_data(self):
+        """Remove only records created by this demo analytics tool.
+
+        This keeps real users/gyms intact and lets testers rebuild smoother demo
+        charts after experimenting with older fake data.
+        """
+        demo_users = get_user_model().objects.filter(username__startswith='demo_customer_analytics_')
+        demo_user_ids = list(demo_users.values_list('id', flat=True))
+        checkins_deleted = GymCheckIn.objects.filter(notes__icontains='Demo QR check-in').delete()[0]
+        workouts_deleted = 0
+        if WorkoutLog is not None:
+            workouts_deleted = WorkoutLog.objects.filter(source='demo_seed').delete()[0]
+        favorites_deleted = Favorite.objects.filter(user_id__in=demo_user_ids).delete()[0]
+        subscriptions_deleted = GymSubscription.objects.filter(customer_id__in=demo_user_ids).delete()[0]
+        bookings_deleted = Booking.objects.filter(customer_id__in=demo_user_ids, customer_note__icontains='Demo analytics booking').delete()[0]
+        self.stdout.write(self.style.WARNING(
+            f'Reset demo analytics data: check-ins={checkins_deleted}, workouts={workouts_deleted}, '
+            f'favorites={favorites_deleted}, subscriptions={subscriptions_deleted}, bookings={bookings_deleted}'
+        ))
 
     def get_target_gyms(self, owner_username):
         gyms = Gym.objects.filter(owner__isnull=False).select_related('owner')

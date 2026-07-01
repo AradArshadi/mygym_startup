@@ -140,21 +140,23 @@ class OwnerAnalyticsDashboardTests(TestCase):
         self.assertEqual(data['favorites'], 1)
         self.assertEqual(sum(hour['count'] for hour in data['peak']['hours']), 1)
 
-    def test_owner_portfolio_analytics_page_renders(self):
+    def test_owner_dashboard_contains_merged_analytics(self):
         self.client.force_login(self.owner)
-        response = self.client.get(reverse('owner_analytics'))
+        response = self.client.get(reverse('owner_dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Portfolio performance')
+        self.assertContains(response, 'Portfolio analytics')
         self.assertContains(response, 'Analytics Gym')
         self.assertContains(response, 'Estimated income')
+        self.assertContains(response, 'Member traffic by hour')
 
-    def test_per_gym_analytics_page_renders_peak_and_conversion(self):
+    def test_old_analytics_urls_redirect_to_owner_dashboard_anchors(self):
         self.client.force_login(self.owner)
+        response = self.client.get(reverse('owner_analytics'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('#owner-analytics', response['Location'])
         response = self.client.get(reverse('owner_gym_analytics', args=[self.gym.id]))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Peak arrival times')
-        self.assertContains(response, 'Booking funnel')
-        self.assertContains(response, 'Revenue streams')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(f'#owner-gym-analytics-{self.gym.id}', response['Location'])
 
     def test_non_owner_cannot_open_gym_analytics(self):
         self.client.force_login(self.customer)
