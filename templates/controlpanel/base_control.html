@@ -17,6 +17,8 @@
             <a class="control-nav-link {% if request.resolver_match.url_name == 'control_logs' %}active{% endif %}" href="{% url 'control_logs' %}">System Logs</a>
             <a class="control-nav-link {% if request.resolver_match.url_name == 'control_security' %}active{% endif %}" href="{% url 'control_security' %}">Safety Center</a>
             <a class="control-nav-link {% if request.resolver_match.url_name == 'control_demo_tools' %}active{% endif %}" href="{% url 'control_demo_tools' %}">Demo Tools</a>
+            <a class="control-nav-link" href="{% url 'api_docs' %}" target="_blank">Swagger API</a>
+            <a class="control-nav-link" href="{% url 'api_redoc' %}" target="_blank">API Docs</a>
             <a class="control-nav-link" href="{% url 'admin:index' %}" target="_blank">Django Admin</a>
           </nav>
         </div>

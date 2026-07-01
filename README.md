@@ -473,3 +473,35 @@ Keep demo tools disabled in real production:
 ```env
 DEMO_TOOLS_ENABLED=False
 ```
+
+## API & Swagger Control Layer
+
+This build includes a documented API layer for internal testing and future mobile/API work.
+
+- Swagger UI: `/api/docs/`
+- ReDoc: `/api/redoc/`
+- OpenAPI schema: `/api/schema/`
+
+Main API groups:
+
+- Demo Tools: seed/reset realistic demo analytics data from Swagger.
+- Owner Analytics: inspect portfolio and per-gym analytics as JSON.
+- Gyms/Favorites: paginated gym explore API and favorite/unfavorite actions.
+- Fitness: workout logs, activity calendar, and fitness summary APIs.
+- Security/Email Diagnostics: sanitized safety and SMTP diagnostics.
+
+Install/update dependencies after pulling this build:
+
+```bash
+pip install -r requirements.txt
+python manage.py check
+python manage.py test apps.api
+```
+
+For demo seeding through Swagger, set:
+
+```env
+DEMO_TOOLS_ENABLED=True
+```
+
+Keep this disabled in real production.

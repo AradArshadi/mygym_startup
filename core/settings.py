@@ -33,6 +33,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
     'apps.accounts',
     'apps.gyms',
     'apps.bookings',
@@ -44,6 +47,7 @@ INSTALLED_APPS = [
     'apps.controlpanel',
     'apps.emails',
     'apps.systemlogs',
+    'apps.api',
 ]
 
 MIDDLEWARE = [
@@ -166,6 +170,53 @@ ALLOWED_GYM_IMAGE_EXTENSIONS = [ext.lower().strip() for ext in config('ALLOWED_G
 if RUNNING_TESTS:
     EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
     PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+
+
+# REST API / OpenAPI documentation
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'myGym API',
+    'DESCRIPTION': (
+        'Internal and future-facing API layer for myGym. '
+        'Dangerous demo/control endpoints require staff/admin access and DEMO_TOOLS_ENABLED=True. '
+        'Use Swagger for testing, demo seeding, owner analytics inspection, fitness debugging, and email diagnostics.'
+    ),
+    'VERSION': '0.9.3.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': False,
+        'filter': True,
+        'defaultModelsExpandDepth': 1,
+        'defaultModelExpandDepth': 2,
+        'docExpansion': 'none',
+        'tagsSorter': 'alpha',
+        'operationsSorter': 'alpha',
+    },
+    'TAGS': [
+        {'name': 'Demo Tools', 'description': 'Admin-only testing/demo operations. Must be disabled for real production.'},
+        {'name': 'Owner Analytics', 'description': 'Owner portfolio and per-gym analytics backed by bookings, subscriptions, and QR check-ins.'},
+        {'name': 'Gyms', 'description': 'Gym exploration and detail APIs.'},
+        {'name': 'Favorites', 'description': 'Customer favorite gym actions.'},
+        {'name': 'Fitness', 'description': 'Workout logs, activity map, and customer fitness home data.'},
+        {'name': 'Security', 'description': 'Sanitized deployment and safety diagnostics.'},
+        {'name': 'Email Diagnostics', 'description': 'Sanitized email config and SMTP/API probe actions.'},
+    ],
+}
 
 LOGIN_REDIRECT_URL = 'fitness_home'
 LOGOUT_REDIRECT_URL = 'gym_list'
